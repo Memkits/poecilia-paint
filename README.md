@@ -1,5 +1,5 @@
 
-Phlox workflow in [calcit-js](https://github.com/Quamolit/phlox.calcit)
+Phlox workflow in [calcit-js](http://github.com/calcit-lang)
 ----
 
 ### Usage
@@ -12,7 +12,7 @@ yarn vite
 
 ### Workflow
 
-Workflow https://github.com/Quamolit/phlox-workflow
+Workflow https://github.com/Phlox-GL/phlox-workflow
 
 ### License
 
