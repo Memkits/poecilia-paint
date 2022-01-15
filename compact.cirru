@@ -1,7 +1,7 @@
 
 {} (:package |app)
   :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!)
-    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/
+    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/
     :version |0.4.10
   :entries $ {}
   :files $ {}
@@ -28,19 +28,21 @@
                 pointer $ :slide-pointer store
               container ({})
                 comp-slide (>> states pointer) (get slides pointer)
+                comp-slide-tabs (keys slides) pointer
                 comp-button $ {} (:text "\"Add")
                   :position $ [] 100
                     - 20 $ * 0.5 js/window.innerHeight
-                  :on-pointertap $ fn (e d!) (println "\"Add slide")
+                  :on-pointertap $ fn (e d!) (d! :add-slide-after pointer)
                 comp-button $ {} (:text "\"Command")
                   :position $ [] 160
                     - 20 $ * 0.5 js/window.innerHeight
-                  :on-pointertap $ fn (e d!) (println "\"Add slide")
+                  :on-pointertap $ fn (e d!) (d! :add-slide-after pointer)
                     request-text! e
                       {} (:placeholder "\"Command")
                         :style $ {} (:font-family ui/font-code)
                       fn (code)
                         println $ parse-cirru code
+                        println "\"Store" store $ :tab store
                 comp-drag-point (>> states :main-hint)
                   {}
                     :position $ :main-hint store
@@ -62,10 +64,29 @@
                 :style $ {} (:font-size 20)
                   :fill $ hslx 0 100 50
                   :font-family ui/font-fancy
-              text $ {} (:text "\"something")
+              text $ {}
+                :text $ str "\"Something " slide
                 :style $ {} (:font-size 20)
                   :fill $ hslx 0 100 50
                   :font-family ui/font-fancy
+        |comp-slide-tabs $ quote
+          defn comp-slide-tabs (slide-keys pointer)
+            ; println "\"key" $ -> slide-keys .to-list
+              .sort $ fn (a b) (&compare a b)
+            create-list :container ({})
+              -> slide-keys .to-list
+                .sort $ fn (a b) (&compare a b)
+                .map-indexed $ fn (idx key)
+                  [] key $ comp-button
+                    {} (:text key)
+                      :position $ []
+                        -
+                          + 300 $ * idx 32
+                          &* 0.5 js/window.innerWidth
+                        - 20 $ * 0.5 js/window.innerHeight
+                      :fill $ if (= key pointer) (hslx 60 80 30)
+                      :align-right? false
+                      :on-pointertap $ fn (e d!) (; println "\"key" key) (d! :switch-slide key)
     |app.schema $ {}
       :ns $ quote (ns app.schema)
       :defs $ {}
@@ -79,12 +100,17 @@
             :secondary-hint $ [] 40 40
         |slide $ quote
           def slide $ {}
-            :actions $ []
+            :action-stamps $ do action-stamp ([])
             :tree $ {}
+        |action-stamp $ quote
+          def action-stamp $ {} (:op nil) (:snapshot nil)
     |app.updater $ {}
       :ns $ quote
         ns app.updater $ :require
           [] phlox.cursor :refer $ [] update-states
+          bisection-key.core :refer $ bisect mid-id
+          bisection-key.util :refer $ assoc-after assoc-append key-after
+          app.schema :as schema
       :defs $ {}
         |updater $ quote
           defn updater (store op op-data op-id op-time)
@@ -93,7 +119,21 @@
               :states $ update-states store op-data
               :move-main-hint $ assoc store :main-hint op-data
               :move-secondary-hint $ assoc store :secondary-hint op-data
+              :add-slide-after $ update store :slides
+                fn (slides) (add-slide-after slides op-data)
+              :switch-slide $ assoc store :slide-pointer op-data
               :hydrate-storage op-data
+        |add-slide-after $ quote
+          defn add-slide-after (slides base-key)
+            if (nil? base-key)
+              if (empty? slides)
+                {} $ mid-id schema/slide
+                assoc-append slides schema/slide
+              if (empty? slides)
+                let
+                    next-key $ key-after slides base-key
+                  assoc slides next-key schema/slide
+                assoc-after slides base-key schema/slide
     |app.main $ {}
       :ns $ quote
         ns app.main $ :require ("\"pixi.js" :as PIXI)
