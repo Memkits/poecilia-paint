@@ -17,6 +17,7 @@
           phlox.comp.drag-point :refer $ comp-drag-point
           phlox.comp.button :refer $ comp-button
           phlox.input :refer $ request-text!
+          phlox.comp.slider :refer $ comp-spin-slider
       :defs $ {}
         |comp-container $ quote
           defn comp-container (store)
@@ -27,7 +28,15 @@
                 slides $ :slides store
                 pointer $ :slide-pointer store
               container ({})
-                comp-slide (>> states pointer) (get slides pointer)
+                let
+                    slide $ get slides pointer
+                  if (nil? slide)
+                    text $ {} (:text "\"No Slide")
+                      :style $ {} (:font-size 60) (:font-weight 100)
+                        :fill $ hslx 0 100 50
+                        :font-family ui/font-fancy
+                      :align :center
+                    comp-slide (>> states pointer) pointer slide
                 comp-slide-tabs (keys slides) pointer
                 comp-button $ {} (:text "\"Add")
                   :position $ [] 100
@@ -58,17 +67,30 @@
                     :hide-text? true
                     :on-change $ fn (pos d!) (d! :move-secondary-hint pos)
         |comp-slide $ quote
-          defn comp-slide (states slide)
-            if (nil? slide)
-              text $ {} (:text "\"no slide")
-                :style $ {} (:font-size 20)
-                  :fill $ hslx 0 100 50
-                  :font-family ui/font-fancy
-              text $ {}
-                :text $ str "\"Something " slide
-                :style $ {} (:font-size 20)
-                  :fill $ hslx 0 100 50
-                  :font-family ui/font-fancy
+          defn comp-slide (states pointed-key slide)
+            let
+                cursor $ :cursor states
+                state $ either (:data states)
+                  {} $ :pointer 0
+                pointer $ :pointer state
+              container ({})
+                text $ {}
+                  :text $ str "\"Something " slide
+                  :style $ {} (:font-size 20)
+                    :fill $ hslx 0 100 50
+                    :font-family ui/font-fancy
+                comp-spin-slider (>> states :spin)
+                  {} (:value pointer)
+                    :position $ []
+                      - 200 $ * 0.5 js/window.innerWidth
+                      - (* 0.5 js/window.innerHeight) 200
+                    :spin-pivot $ [] 200 (- js/window.innerHeight 200)
+                    :unit 4
+                    :min 0
+                    :max 100
+                    :fraction 2
+                    :on-change $ fn (value d!)
+                      d! cursor $ assoc state :pointer value
         |comp-slide-tabs $ quote
           defn comp-slide-tabs (slide-keys pointer)
             ; println "\"key" $ -> slide-keys .to-list
