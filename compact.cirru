@@ -18,6 +18,7 @@
           phlox.comp.button :refer $ comp-button
           phlox.input :refer $ request-text!
           phlox.comp.slider :refer $ comp-spin-slider
+          phlox.complex :as complex
       :defs $ {}
         |comp-container $ quote
           defn comp-container (store)
@@ -71,7 +72,10 @@
             let
                 cursor $ :cursor states
                 state $ either (:data states)
-                  {} $ :pointer 0
+                  {} (:pointer 0)
+                    :spin-pos $ []
+                      - 200 $ * 0.5 js/window.innerWidth
+                      - (* 0.5 js/window.innerHeight) 200
                 pointer $ :pointer state
               container ({})
                 text $ {}
@@ -81,16 +85,17 @@
                     :font-family ui/font-fancy
                 comp-spin-slider (>> states :spin)
                   {} (:value pointer)
-                    :position $ []
-                      - 200 $ * 0.5 js/window.innerWidth
-                      - (* 0.5 js/window.innerHeight) 200
-                    :spin-pivot $ [] 200 (- js/window.innerHeight 200)
+                    :position $ :spin-pos state
+                    :spin-pivot $ complex/add (:spin-pos state)
+                      [] (* 0.5 js/window.innerWidth) (* 0.5 js/window.innerHeight)
                     :unit 4
                     :min 0
                     :max 100
                     :fraction 2
                     :on-change $ fn (value d!)
                       d! cursor $ assoc state :pointer value
+                    :on-move $ fn (pos d!) (; println "\"move to:" pos)
+                      d! cursor $ assoc state :spin-pos pos
         |comp-slide-tabs $ quote
           defn comp-slide-tabs (slide-keys pointer)
             ; println "\"key" $ -> slide-keys .to-list
