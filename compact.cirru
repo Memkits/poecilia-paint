@@ -19,6 +19,7 @@
           phlox.input :refer $ request-text!
           phlox.comp.slider :refer $ comp-spin-slider
           phlox.complex :as complex
+          phlox.math :refer $ vec-length
       :defs $ {}
         |comp-container $ quote
           defn comp-container (store)
@@ -40,19 +41,19 @@
                     comp-slide (>> states pointer) pointer slide
                 comp-slide-tabs (keys slides) pointer
                 comp-button $ {} (:text "\"Add")
-                  :position $ [] 100
-                    - 20 $ * 0.5 js/window.innerHeight
+                  :position $ [] 160
+                    - 60 $ * 0.5 js/window.innerHeight
                   :on-pointertap $ fn (e d!) (d! :add-slide-after pointer)
                 comp-button $ {} (:text "\"Command")
-                  :position $ [] 160
-                    - 20 $ * 0.5 js/window.innerHeight
-                  :on-pointertap $ fn (e d!) (d! :add-slide-after pointer)
+                  :position $ [] 220
+                    - 60 $ * 0.5 js/window.innerHeight
+                  :on-pointertap $ fn (e d!)
                     request-text! e
                       {} (:placeholder "\"Command")
                         :style $ {} (:font-family ui/font-code)
                       fn (code)
-                        println $ parse-cirru code
-                        println "\"Store" store $ :tab store
+                        run-command (parse-cirru code) (:main-hint store) (:secondary-hint store) pointer d!
+                        ; println "\"Store" store $ :tab store
                 comp-drag-point (>> states :main-hint)
                   {}
                     :position $ :main-hint store
@@ -108,12 +109,29 @@
                     {} (:text key)
                       :position $ []
                         -
-                          + 300 $ * idx 32
+                          + 100 $ * idx 44
                           &* 0.5 js/window.innerWidth
                         - 20 $ * 0.5 js/window.innerHeight
                       :fill $ if (= key pointer) (hslx 60 80 30)
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println "\"key" key) (d! :switch-slide key)
+        |run-command $ quote
+          defn run-command (tree c1 c2 pointer d!)
+            if
+              = 1 $ count tree
+              let[] (command p1 p2 p3) (first tree)
+                case-default command (println "\"Unknown command:" command)
+                  "\"del-slide" $ d! :del-slide pointer
+                  "\"add-slide" $ d! :add-slide-after pointer
+                  "\"add-circle" $ d! :add-circle
+                    {} (:type :circle)
+                      :position $ complex/divide-by (complex/add c1 c2) 2
+                      :radius $ * 0.5
+                        vec-length $ complex/minus c2 c1
+                  "\"add-rect" $ d! :add-rect
+                    {} (:type :rect) (:position c1)
+                      :sizes $ complex/minus c2 c1
+              js/console.warn "\"unknown tree:" tree
     |app.schema $ {}
       :ns $ quote (ns app.schema)
       :defs $ {}
@@ -128,7 +146,7 @@
         |slide $ quote
           def slide $ {}
             :action-stamps $ do action-stamp ([])
-            :tree $ {}
+            :elements $ []
         |action-stamp $ quote
           def action-stamp $ {} (:op nil) (:snapshot nil)
     |app.updater $ {}
@@ -148,6 +166,7 @@
               :move-secondary-hint $ assoc store :secondary-hint op-data
               :add-slide-after $ update store :slides
                 fn (slides) (add-slide-after slides op-data)
+              :del-slide $ dissoc-in store ([] :slides op-data)
               :switch-slide $ assoc store :slide-pointer op-data
               :hydrate-storage op-data
         |add-slide-after $ quote
