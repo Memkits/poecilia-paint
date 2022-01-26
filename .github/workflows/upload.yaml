@@ -29,9 +29,11 @@ jobs:
         mkdir -p ~/.config/calcit/modules/ && cd ~/.config/calcit/modules/
         && git clone https://github.com/calcit-lang/lilac.git
         && git clone https://github.com/calcit-lang/memof.git
+        && git clone https://github.com/calcit-lang/bisection-key.git
         && git clone https://github.com/Respo/respo.calcit.git
         && git clone https://github.com/Respo/respo-ui.calcit.git
         && git clone https://github.com/Phlox-GL/phlox.git
+        && git clone https://github.com/mvc-works/pointed-prompt.git
 
     - name: "compiles to js"
       run: >
