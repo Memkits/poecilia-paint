@@ -1864,7 +1864,7 @@
                   |T $ {}
                     :data $ {}
                       |5 $ {} (:text |new) (:type :leaf) (:at 1612518371822) (:by |rJG4IHzWf)
-                      |D $ {} (:text |FontFaceObserver/default) (:type :leaf) (:at 1612537470545) (:by |rJG4IHzWf)
+                      |D $ {} (:text |FontFaceObserver) (:type :leaf) (:at 1649689096175) (:by |rJG4IHzWf)
                       |L $ {} (:text "|\"Josefin Sans") (:type :leaf) (:at 1583685465541) (:by |rJG4IHzWf)
                     :type :expr
                     :at 1583685458471
@@ -1929,6 +1929,14 @@
                 :type :expr
                 :at 1573662742473
                 :by |rJG4IHzWf
+              |yP $ {} (:type :expr) (:by |rJG4IHzWf) (:at 1649689145281)
+                :data $ {}
+                  |T $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689145281) (:text |render-control!)
+              |yR $ {} (:type :expr) (:by |rJG4IHzWf) (:at 1649689145281)
+                :data $ {}
+                  |T $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689145281) (:text |start-control-loop!)
+                  |b $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689145281) (:text |8)
+                  |h $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689145281) (:text |on-control-event)
               |yT $ {}
                 :data $ {}
                   |T $ {} (:text |println) (:type :leaf) (:at 1573356701317) (:by |rJG4IHzWf)
@@ -2013,7 +2021,7 @@
                           |T $ {} (:text |op-id) (:type :leaf) (:at 1583036785574) (:by |rJG4IHzWf)
                           |j $ {}
                             :data $ {}
-                              |T $ {} (:text |shortid/generate) (:type :leaf) (:at 1583036785574) (:by |rJG4IHzWf)
+                              |T $ {} (:text |nanoid) (:type :leaf) (:at 1649689580531) (:by |rJG4IHzWf)
                             :type :expr
                             :at 1583036785574
                             :by |rJG4IHzWf
@@ -2143,6 +2151,11 @@
                         :type :expr
                         :at 1612598431174
                         :by |rJG4IHzWf
+                      |yb $ {} (:type :expr) (:by |rJG4IHzWf) (:at 1649689168930)
+                        :data $ {}
+                          |T $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689168930) (:text |replace-control-loop!)
+                          |b $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689168930) (:text |8)
+                          |h $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689168930) (:text |on-control-event)
                     :type :expr
                     :at 1548266585003
                     :by |rJG4IHzWf
@@ -2173,9 +2186,11 @@
               :data $ {}
                 |yT $ {}
                   :data $ {}
-                    |j $ {} (:text "|\"shortid") (:type :leaf) (:at 1580869191409) (:by |rJG4IHzWf)
-                    |r $ {} (:text |:as) (:type :leaf) (:at 1580869192078) (:by |rJG4IHzWf)
-                    |v $ {} (:text |shortid) (:type :leaf) (:at 1580869195036) (:by |rJG4IHzWf)
+                    |j $ {} (:text "|\"nanoid") (:type :leaf) (:at 1649689585357) (:by |rJG4IHzWf)
+                    |r $ {} (:text |:refer) (:type :leaf) (:at 1649689589796) (:by |rJG4IHzWf)
+                    |t $ {} (:type :expr) (:by |rJG4IHzWf) (:at 1649689590050)
+                      :data $ {}
+                        |T $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689591009) (:text |nanoid)
                   :type :expr
                   :at 1580869187547
                   :by |rJG4IHzWf
@@ -2195,7 +2210,7 @@
                 |yr $ {}
                   :data $ {}
                     |n $ {} (:text "|\"fontfaceobserver-es") (:type :leaf) (:at 1612538257268) (:by |rJG4IHzWf)
-                    |r $ {} (:text |:as) (:type :leaf) (:at 1583685442473) (:by |rJG4IHzWf)
+                    |r $ {} (:text |:default) (:type :leaf) (:at 1649689101025) (:by |rJG4IHzWf)
                     |v $ {} (:text |FontFaceObserver) (:type :leaf) (:at 1583685444335) (:by |rJG4IHzWf)
                   :type :expr
                   :at 1583685438044
@@ -2233,6 +2248,7 @@
                       :data $ {}
                         |j $ {} (:text |render!) (:type :leaf) (:at 1573356508921) (:by |rJG4IHzWf)
                         |r $ {} (:text |clear-phlox-caches!) (:type :leaf) (:at 1593275719006) (:by |rJG4IHzWf)
+                        |t $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689118790) (:text |on-control-event)
                       :type :expr
                       :at 1573356503870
                       :by |rJG4IHzWf
@@ -2273,6 +2289,15 @@
                   :type :expr
                   :at 1580869162931
                   :by |rJG4IHzWf
+                |z $ {} (:type :expr) (:by |rJG4IHzWf) (:at 1649689129123)
+                  :data $ {}
+                    |T $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689129123) (:text |touch-control.core)
+                    |b $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689129123) (:text |:refer)
+                    |h $ {} (:type :expr) (:by |rJG4IHzWf) (:at 1649689129123)
+                      :data $ {}
+                        |T $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689129123) (:text |render-control!)
+                        |b $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689129123) (:text |start-control-loop!)
+                        |h $ {} (:type :leaf) (:by |rJG4IHzWf) (:at 1649689129123) (:text |replace-control-loop!)
               :type :expr
               :at 1548267234269
               :by |rJG4IHzWf
@@ -2370,7 +2395,7 @@
           :at 1527788237503
           :by |root
   :configs $ {} (:reload-fn |app.main/reload!) (:port 6001) (:output |src) (:compact-output? true) (:storage-key |calcit.cirru) (:version |0.4.10)
-    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/
+    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/ |touch-control/
     :init-fn |app.main/main!
     :extension |.cljs
   :entries $ {}
