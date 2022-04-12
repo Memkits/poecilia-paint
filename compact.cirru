@@ -1,7 +1,7 @@
 
 {} (:package |app)
   :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!)
-    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/
+    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/ |touch-control/
     :version |0.4.10
   :entries $ {}
   :files $ {}
@@ -234,15 +234,16 @@
     |app.main $ {}
       :ns $ quote
         ns app.main $ :require ("\"pixi.js" :as PIXI)
-          phlox.core :refer $ render! clear-phlox-caches!
+          phlox.core :refer $ render! clear-phlox-caches! on-control-event
           app.comp.container :refer $ comp-container
           app.schema :as schema
           app.config :refer $ dev?
-          "\"shortid" :as shortid
+          "\"nanoid" :refer $ nanoid
           app.updater :refer $ updater
-          "\"fontfaceobserver-es" :as FontFaceObserver
+          "\"fontfaceobserver-es" :default FontFaceObserver
           "\"./calcit.build-errors" :default build-errors
           "\"bottom-tip" :default hud!
+          touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
       :defs $ {}
         |render-app! $ quote
           defn render-app! (? arg)
@@ -250,9 +251,11 @@
         |main! $ quote
           defn main! () (; js/console.log PIXI)
             if dev? $ load-console-formatter!
-            -> (new FontFaceObserver/default "\"Josefin Sans") (.!load)
+            -> (new FontFaceObserver "\"Josefin Sans") (.!load)
               .!then $ fn (event) (render-app!)
             add-watch *store :change $ fn (store prev) (render-app!)
+            render-control!
+            start-control-loop! 8 on-control-event
             println "\"App Started"
         |*store $ quote (defatom *store schema/store)
         |dispatch! $ quote
@@ -261,7 +264,7 @@
               and dev? $ not= op :states
               println "\"dispatch!" op op-data
             let
-                op-id $ shortid/generate
+                op-id $ nanoid
                 op-time $ js/Date.now
               reset! *store $ updater @*store op op-data op-id op-time
         |reload! $ quote
@@ -269,6 +272,7 @@
             do (println "\"Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
               add-watch *store :change $ fn (store prev) (render-app!)
               render-app!
+              replace-control-loop! 8 on-control-event
               hud! "\"ok~" "\"Ok"
             hud! "\"error" build-errors
     |app.config $ {}
