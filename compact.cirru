@@ -1,25 +1,10 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!)
+  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!) (:version |0.4.10)
     :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/ |touch-control/
-    :version |0.4.10
   :entries $ {}
   :files $ {}
     |app.comp.container $ {}
-      :ns $ quote
-        ns app.comp.container $ :require
-          phlox.core :refer $ g hslx rect circle text container graphics create-list >>
-          phlox.comp.button :refer $ comp-button
-          phlox.comp.drag-point :refer $ comp-drag-point
-          "\"shortid" :as shortid
-          respo-ui.core :as ui
-          memof.alias :refer $ memof-call
-          phlox.comp.drag-point :refer $ comp-drag-point
-          phlox.comp.button :refer $ comp-button
-          phlox.input :refer $ request-text!
-          phlox.comp.slider :refer $ comp-spin-slider
-          phlox.complex :as complex
-          phlox.math :refer $ vec-length
       :defs $ {}
         |comp-container $ quote
           defn comp-container (store)
@@ -130,25 +115,6 @@
                       :fill $ if (= key pointer) (hslx 60 80 30)
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println "\"key" key) (d! :switch-slide key)
-        |run-command $ quote
-          defn run-command (tree c1 c2 slide-key d!)
-            if
-              = 1 $ count tree
-              let[] (command p1 p2 p3) (first tree)
-                case-default command (println "\"Unknown command:" command)
-                  "\"del-slide" $ d! :del-slide slide-key
-                  "\"add-slide" $ if (some? slide-key) (d! :add-slide-after slide-key) (js/console.warn "\"nil slide-key")
-                  "\"add-circle" $ d! :add-shape
-                    {} (:slide-key slide-key)
-                      :op $ {} (:type :circle)
-                        :position $ complex/divide-by (complex/add c1 c2) 2
-                        :radius $ * 0.5
-                          vec-length $ complex/minus c2 c1
-                  "\"add-rect" $ d! :add-shape
-                    {} (:slide-key slide-key)
-                      :op $ {} (:type :rect) (:position c1)
-                        :sizes $ complex/minus c2 c1
-              js/console.warn "\"unknown tree:" tree
         |render-shape $ quote
           defn render-shape (shape-op)
             case-default (:type shape-op)
@@ -173,9 +139,97 @@
                   :position $ :position shape-op
                   :fill $ hslx 200 80 80
                   :on $ {}
-    |app.schema $ {}
-      :ns $ quote (ns app.schema)
+        |run-command $ quote
+          defn run-command (tree c1 c2 slide-key d!)
+            if
+              = 1 $ count tree
+              let[] (command p1 p2 p3) (first tree)
+                case-default command (println "\"Unknown command:" command)
+                  "\"del-slide" $ d! :del-slide slide-key
+                  "\"add-slide" $ if (some? slide-key) (d! :add-slide-after slide-key) (js/console.warn "\"nil slide-key")
+                  "\"add-circle" $ d! :add-shape
+                    {} (:slide-key slide-key)
+                      :op $ {} (:type :circle)
+                        :position $ complex/divide-by (complex/add c1 c2) 2
+                        :radius $ * 0.5
+                          vec-length $ complex/minus c2 c1
+                  "\"add-rect" $ d! :add-shape
+                    {} (:slide-key slide-key)
+                      :op $ {} (:type :rect) (:position c1)
+                        :sizes $ complex/minus c2 c1
+              js/console.warn "\"unknown tree:" tree
+      :ns $ quote
+        ns app.comp.container $ :require
+          phlox.core :refer $ g hslx rect circle text container graphics create-list >>
+          phlox.comp.button :refer $ comp-button
+          phlox.comp.drag-point :refer $ comp-drag-point
+          "\"shortid" :as shortid
+          respo-ui.core :as ui
+          memof.alias :refer $ memof-call
+          phlox.comp.drag-point :refer $ comp-drag-point
+          phlox.comp.button :refer $ comp-button
+          phlox.input :refer $ request-text!
+          phlox.comp.slider :refer $ comp-spin-slider
+          phlox.complex :as complex
+          phlox.math :refer $ vec-length
+    |app.config $ {}
       :defs $ {}
+        |dev? $ quote
+          def dev? $ = "\"dev" (get-env "\"mode" "\"release")
+        |site $ quote
+          def site $ {} (:dev-ui "\"http://localhost:8100/main.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main.css") (:cdn-url "\"http://cdn.tiye.me/phlox/") (:title "\"Phlox") (:icon "\"http://cdn.tiye.me/logo/quamolit.png") (:storage-key "\"phlox")
+      :ns $ quote (ns app.config)
+    |app.main $ {}
+      :defs $ {}
+        |*store $ quote (defatom *store schema/store)
+        |dispatch! $ quote
+          defn dispatch! (op op-data)
+            when
+              and dev? $ not= op :states
+              println "\"dispatch!" op op-data
+            let
+                op-id $ nanoid
+                op-time $ js/Date.now
+              reset! *store $ updater @*store op op-data op-id op-time
+        |main! $ quote
+          defn main! () (; js/console.log PIXI)
+            if dev? $ load-console-formatter!
+            -> (new FontFaceObserver "\"Josefin Sans") (.!load)
+              .!then $ fn (event) (render-app!)
+            add-watch *store :change $ fn (store prev) (render-app!)
+            render-control!
+            start-control-loop! 8 on-control-event
+            println "\"App Started"
+        |reload! $ quote
+          defn reload! () $ if (nil? build-errors)
+            do (println "\"Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
+              add-watch *store :change $ fn (store prev) (render-app!)
+              render-app!
+              replace-control-loop! 8 on-control-event
+              hud! "\"ok~" "\"Ok"
+            hud! "\"error" build-errors
+        |render-app! $ quote
+          defn render-app! (? arg)
+            render! (comp-container @*store) dispatch! $ or arg ({})
+      :ns $ quote
+        ns app.main $ :require ("\"pixi.js" :as PIXI)
+          phlox.core :refer $ render! clear-phlox-caches! on-control-event
+          app.comp.container :refer $ comp-container
+          app.schema :as schema
+          app.config :refer $ dev?
+          "\"nanoid" :refer $ nanoid
+          app.updater :refer $ updater
+          "\"fontfaceobserver-es" :default FontFaceObserver
+          "\"./calcit.build-errors" :default build-errors
+          "\"bottom-tip" :default hud!
+          touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
+    |app.schema $ {}
+      :defs $ {}
+        |action-log $ quote
+          def action-log $ {} (:op nil) (:snapshot nil)
+        |slide $ quote
+          def slide $ {}
+            :logs $ do action-log ([])
         |store $ quote
           def store $ {}
             :states $ {}
@@ -184,19 +238,20 @@
             :slides $ do slide ({})
             :main-hint $ [] 10 10
             :secondary-hint $ [] 40 40
-        |slide $ quote
-          def slide $ {}
-            :logs $ do action-log ([])
-        |action-log $ quote
-          def action-log $ {} (:op nil) (:snapshot nil)
+      :ns $ quote (ns app.schema)
     |app.updater $ {}
-      :ns $ quote
-        ns app.updater $ :require
-          [] phlox.cursor :refer $ [] update-states
-          bisection-key.core :refer $ bisect mid-id
-          bisection-key.util :refer $ assoc-after assoc-append key-after
-          app.schema :as schema
       :defs $ {}
+        |add-slide-after $ quote
+          defn add-slide-after (slides base-key)
+            if (nil? base-key)
+              if (empty? slides)
+                {} $ mid-id schema/slide
+                assoc-append slides schema/slide
+              if (empty? slides)
+                let
+                    next-key $ key-after slides base-key
+                  assoc slides next-key schema/slide
+                assoc-after slides base-key schema/slide
         |updater $ quote
           defn updater (store op op-data op-id op-time)
             case-default op
@@ -220,65 +275,9 @@
                         conj logs $ {} (:op shape-op)
                           :snapshot $ conj tree shape-op
               :hydrate-storage op-data
-        |add-slide-after $ quote
-          defn add-slide-after (slides base-key)
-            if (nil? base-key)
-              if (empty? slides)
-                {} $ mid-id schema/slide
-                assoc-append slides schema/slide
-              if (empty? slides)
-                let
-                    next-key $ key-after slides base-key
-                  assoc slides next-key schema/slide
-                assoc-after slides base-key schema/slide
-    |app.main $ {}
       :ns $ quote
-        ns app.main $ :require ("\"pixi.js" :as PIXI)
-          phlox.core :refer $ render! clear-phlox-caches! on-control-event
-          app.comp.container :refer $ comp-container
+        ns app.updater $ :require
+          [] phlox.cursor :refer $ [] update-states
+          bisection-key.core :refer $ bisect mid-id
+          bisection-key.util :refer $ assoc-after assoc-append key-after
           app.schema :as schema
-          app.config :refer $ dev?
-          "\"nanoid" :refer $ nanoid
-          app.updater :refer $ updater
-          "\"fontfaceobserver-es" :default FontFaceObserver
-          "\"./calcit.build-errors" :default build-errors
-          "\"bottom-tip" :default hud!
-          touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
-      :defs $ {}
-        |render-app! $ quote
-          defn render-app! (? arg)
-            render! (comp-container @*store) dispatch! $ or arg ({})
-        |main! $ quote
-          defn main! () (; js/console.log PIXI)
-            if dev? $ load-console-formatter!
-            -> (new FontFaceObserver "\"Josefin Sans") (.!load)
-              .!then $ fn (event) (render-app!)
-            add-watch *store :change $ fn (store prev) (render-app!)
-            render-control!
-            start-control-loop! 8 on-control-event
-            println "\"App Started"
-        |*store $ quote (defatom *store schema/store)
-        |dispatch! $ quote
-          defn dispatch! (op op-data)
-            when
-              and dev? $ not= op :states
-              println "\"dispatch!" op op-data
-            let
-                op-id $ nanoid
-                op-time $ js/Date.now
-              reset! *store $ updater @*store op op-data op-id op-time
-        |reload! $ quote
-          defn reload! () $ if (nil? build-errors)
-            do (println "\"Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
-              add-watch *store :change $ fn (store prev) (render-app!)
-              render-app!
-              replace-control-loop! 8 on-control-event
-              hud! "\"ok~" "\"Ok"
-            hud! "\"error" build-errors
-    |app.config $ {}
-      :ns $ quote (ns app.config)
-      :defs $ {}
-        |dev? $ quote
-          def dev? $ = "\"dev" (get-env "\"mode")
-        |site $ quote
-          def site $ {} (:dev-ui "\"http://localhost:8100/main.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main.css") (:cdn-url "\"http://cdn.tiye.me/phlox/") (:title "\"Phlox") (:icon "\"http://cdn.tiye.me/logo/quamolit.png") (:storage-key "\"phlox")
