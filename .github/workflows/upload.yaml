@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
-      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
@@ -58,19 +58,43 @@ jobs:
         calcit calcit.cirru js
         yarn vite build --base=./
 
-    - name: Upload web assets
-      id: deploy
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: Pendect/action-rsyncer@2554a1e574cf229fb144f23ea5971dbdca8ae8e3 # v1.1.0
-      env:
-        DEPLOY_KEY: ${{secrets.rsync_private_key}}
-      with:
-        flags: '-avzr --progress'
-        options: ''
-        ssh_options: ''
-        src: 'dist/*'
-        dest: 'rsync-user@tiye.me:/web-assets/repo/${{ github.repository }}'
+    - name: Install verified rsync
+      run: |
+        set -euo pipefail
+        curl --fail --location --silent --show-error \
+          --output "$RUNNER_TEMP/rsync.tar.gz" \
+          https://download.samba.org/pub/rsync/src/rsync-3.4.4.tar.gz
+        echo "bd88cf82fa653da32314fb229136407c5c90f80d1758d8f4b091767877d8fa96  $RUNNER_TEMP/rsync.tar.gz" | sha256sum --check --strict
+        tar -xzf "$RUNNER_TEMP/rsync.tar.gz" -C "$RUNNER_TEMP"
+        cd "$RUNNER_TEMP/rsync-3.4.4"
+        ./configure \
+          --prefix="$RUNNER_TEMP/rsync-install" \
+          --disable-acl-support \
+          --disable-lz4 \
+          --disable-openssl \
+          --disable-xattr-support \
+          --disable-xxhash \
+          --disable-zstd
+        make -j2
+        make install
+        echo "$RUNNER_TEMP/rsync-install/bin" >> "$GITHUB_PATH"
 
-    - name: Display deploy status
+    - name: Configure verified SSH host
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: echo "${{ steps.deploy.outputs.status }}"
+      env:
+        DEPLOY_KEY: ${{ secrets.rsync_private_key }}
+      run: |
+        set -euo pipefail
+        install -m 700 -d "$HOME/.ssh"
+        printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/deploy_key"
+        chmod 600 "$HOME/.ssh/deploy_key"
+        printf '%s\n' 'tiye.me ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfDrFyoH0+6TL2+xhosnON6f0+/m9Iz8ydJLWMQQzsm' > "$HOME/.ssh/known_hosts"
+        chmod 600 "$HOME/.ssh/known_hosts"
+
+    - name: Upload web assets
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        set -euo pipefail
+        rsync -avzr --progress \
+          -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts" \
+          dist/* "rsync-user@tiye.me:/web-assets/repo/${{ github.repository }}"
