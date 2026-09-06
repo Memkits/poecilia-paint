@@ -13,49 +13,68 @@
             defn comp-container (store)
               ; println |Store store $ :tab store
               let
+                  store-map $ unsafe-coerce store 'Map
                   cursor $ []
-                  states $ :states store
-                  slides $ :slides store
-                  slide-key $ :slide-key store
+                  states $ unsafe-coerce (&map:get store-map :states) 'Map
+                  slides $ unsafe-coerce (&map:get store-map :slides) 'Map
+                  slide-key $ &map:get store-map :slide-key
                 container ({})
-                  let
-                      slide $ get slides slide-key
-                    if (nil? slide)
+                  match (get slides slide-key)
+                    (:none)
                       text $ {} (:text "|No Slide")
-                        :style $ {} (:font-size 60) (:font-weight 100)
-                          :fill $ hslx 0 100 50
-                          :font-family ui/font-fancy
-                        :align :center
+                        (:style ({} (:font-size 60) (:font-weight 100) (:fill (hslx 0 100 50)) (:font-family ui/font-fancy)))
+                          :align :center
+                    (:some slide)
                       comp-slide (>> states slide-key) slide-key slide
                   comp-slide-tabs (keys slides) slide-key
                   comp-button $ {} (:text |Add)
                     :position $ [] 160
-                      - 60 $ * 0.5 js/window.innerHeight
+                      - 60 $ * 0.5
+                        unsafe-coerce
+                          .-innerHeight $ unsafe-coerce js/window 'JsObject
+                          , 'Number
                     :on-pointertap $ fn (e d!) (d! :add-slide-after slide-key)
                   comp-button $ {} (:text |Command)
                     :position $ [] 220
-                      - 60 $ * 0.5 js/window.innerHeight
+                      - 60 $ * 0.5
+                        unsafe-coerce
+                          .-innerHeight $ unsafe-coerce js/window 'JsObject
+                          , 'Number
                     :on-pointertap $ fn (e d!)
                       request-text! e
                         {} (:placeholder |Command)
                           :style $ {} (:font-family ui/font-code)
                         fn (code)
-                          run-command (parse-cirru code) (:main-hint store) (:secondary-hint store) slide-key d!
+                          run-command (parse-cirru code)
+                            unsafe-coerce
+                              option:unwrap-or (get store-map :main-hint) ([] 10 10)
+                              , 'List
+                            unsafe-coerce
+                              option:unwrap-or (get store-map :secondary-hint) ([] 40 40)
+                              , 'List
+                            , slide-key d!
                           ; println |Store store $ :tab store
                   comp-button $ {} (:text |DEBUG)
                     :position $ [] 320
-                      - 60 $ * 0.5 js/window.innerHeight
+                      - 60 $ * 0.5
+                        unsafe-coerce
+                          .-innerHeight $ unsafe-coerce js/window 'JsObject
+                          , 'Number
                     :on-pointertap $ fn (e d!) (js/console.warn |[DEBUG] store)
                   comp-drag-point (>> states :main-hint)
                     {}
-                      :position $ :main-hint store
+                      :position $ unsafe-coerce
+                        option:unwrap-or (get store-map :main-hint) ([] 10 10)
+                        , 'List
                       :fill $ hslx 120 90 80
                       :radius 8
                       :hide-text? true
                       :on-change $ fn (pos d!) (d! :move-main-hint pos)
                   comp-drag-point (>> states :secondary-hint)
                     {}
-                      :position $ :secondary-hint store
+                      :position $ unsafe-coerce
+                        option:unwrap-or (get store-map :secondary-hint) ([] 40 40)
+                        , 'List
                       :fill $ hslx 250 90 70
                       :radius 6
                       :hide-text? true
@@ -66,35 +85,63 @@
           :code $ quote
             defn comp-slide (states pointed-key slide)
               let
-                  cursor $ :cursor states
-                  state $ either (:data states)
-                    {} (:pointer 0)
-                      :spin-pos $ []
-                        - 200 $ * 0.5 js/window.innerWidth
-                        - (* 0.5 js/window.innerHeight) 200
-                  pointer $ :pointer state
+                  states-map $ unsafe-coerce states 'Map
+                  slide-map $ unsafe-coerce slide 'Map
+                  logs $ unsafe-coerce (&map:get slide-map :logs) 'List
+                  cursor $ &map:get states-map :cursor
+                  fallback-state $ {} (:pointer 0)
+                    :spin-pos $ []
+                      - 200 $ * 0.5
+                        unsafe-coerce
+                          .-innerWidth $ unsafe-coerce js/window 'JsObject
+                          , 'Number
+                      -
+                        * 0.5 $ unsafe-coerce
+                          .-innerHeight $ unsafe-coerce js/window 'JsObject
+                          , 'Number
+                        , 200
+                  state $ unsafe-coerce
+                    option:unwrap-or (get states-map :data) fallback-state
+                    , 'Map
+                  pointer $ &map:get state :pointer
                 container ({})
                   create-list :container ({})
-                    -> slide :logs $ map-indexed
+                    -> logs $ map-indexed
                       fn (idx log)
                         let
-                            shape-op $ :op log
+                            shape-op $ &map:get (unsafe-coerce log 'Map) :op
                           [] idx $ comp-button
                             {}
-                              :text $ str (:type shape-op)
+                              :text $ str
+                                &map:get (unsafe-coerce shape-op 'Map) :type
                               :position $ []
-                                - 20 $ * 0.5 js/window.innerWidth
+                                - 20 $ * 0.5
+                                  unsafe-coerce
+                                    .-innerWidth $ unsafe-coerce js/window 'JsObject
+                                    , 'Number
                                 - 120 $ * idx 40
                               :on-pointertap $ fn (e d!) (println |shape-op shape-op)
                   create-list :container ({})
-                    -> slide :logs $ map-indexed
+                    -> logs $ map-indexed
                       fn (idx log)
-                        [] idx $ render-shape (:op log)
+                        [] idx $ render-shape
+                          &map:get (unsafe-coerce log 'Map) :op
                   comp-spin-slider (>> states :spin)
                     {} (:value pointer)
-                      :position $ :spin-pos state
-                      :spin-pivot $ complex/add (:spin-pos state)
-                        [] (* 0.5 js/window.innerWidth) (* 0.5 js/window.innerHeight)
+                      :position $ unsafe-coerce
+                        option:unwrap-or (get state :spin-pos) ([] 0 0)
+                        , 'List
+                      :spin-pivot $ complex/add
+                        unsafe-coerce
+                          option:unwrap-or (get state :spin-pos) ([] 0 0)
+                          , 'List
+                        []
+                          * 0.5 $ unsafe-coerce
+                            .-innerWidth $ unsafe-coerce js/window 'JsObject
+                            , 'Number
+                          * 0.5 $ unsafe-coerce
+                            .-innerHeight $ unsafe-coerce js/window 'JsObject
+                            , 'Number
                       :unit 4
                       :min 0
                       :max 100
@@ -110,47 +157,62 @@
             defn comp-slide-tabs (slide-keys pointer)
               ; println |key $ -> slide-keys .to-list
                 .sort $ fn (a b) (&compare a b)
-              create-list :container ({})
-                -> slide-keys .to-list
-                  .sort $ fn (a b) (&compare a b)
-                  .map-indexed $ fn (idx key)
-                    [] key $ comp-button
-                      {} (:text key)
-                        :position $ []
-                          -
-                            + 100 $ * idx 44
-                            &* 0.5 js/window.innerWidth
-                          - 20 $ * 0.5 js/window.innerHeight
-                        :fill $ if (= key pointer) (hslx 60 80 30)
-                        :align-right? false
-                        :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
+              let
+                  slide-key-set $ unsafe-coerce slide-keys 'Set
+                create-list :container ({})
+                  -> slide-key-set .to-list
+                    .sort $ fn (a b) (&compare a b)
+                    .map-indexed $ fn (idx key)
+                      [] key $ comp-button
+                        {} (:text key)
+                          :position $ []
+                            -
+                              + 100 $ * idx 44
+                              &* 0.5 $ unsafe-coerce
+                                .-innerWidth $ unsafe-coerce js/window 'JsObject
+                                , 'Number
+                            - 20 $ * 0.5
+                              unsafe-coerce
+                                .-innerHeight $ unsafe-coerce js/window 'JsObject
+                                , 'Number
+                          :fill $ if (= key pointer) (hslx 60 80 30)
+                          :align-right? false
+                          :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
           :examples $ []
           :schema $ :: 'Dynamic
         'render-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn render-shape (shape-op)
-              case-default (:type shape-op)
-                text $ {}
-                  :text $ str "|Unknown: " shape-op
-                  :style $ {} (:font-size 14) (:font-weight 500)
-                    :fill $ hslx 0 100 50
-                    :font-family ui/font-fancy
-                  :align :center
-                :rect $ rect
-                  {}
-                    :position $ :position shape-op
-                    :size $ :sizes shape-op
-                    :line-style $ {} (:width 4)
-                      :color $ hslx 0 80 50
-                      :alpha 1
-                    :fill $ hslx 200 80 80
-                    :on $ {}
-                :circle $ circle
-                  {}
-                    :radius $ :radius shape-op
-                    :position $ :position shape-op
-                    :fill $ hslx 200 80 80
-                    :on $ {}
+              let
+                  shape-map $ unsafe-coerce shape-op 'Map
+                case-default (&map:get shape-map :type)
+                  text $ {}
+                    :text $ str "|Unknown: " shape-op
+                    :style $ {} (:font-size 14) (:font-weight 500)
+                      :fill $ hslx 0 100 50
+                      :font-family ui/font-fancy
+                    :align :center
+                  :rect $ rect
+                    {}
+                      :position $ unsafe-coerce
+                        option:unwrap-or (get shape-map :position) ([] 0 0)
+                        , 'List
+                      :size $ unsafe-coerce
+                        option:unwrap-or (get shape-map :sizes) ([] 0 0)
+                        , 'List
+                      :line-style $ {} (:width 4)
+                        :color $ hslx 0 80 50
+                        :alpha 1
+                      :fill $ hslx 200 80 80
+                      :on $ {}
+                  :circle $ circle
+                    {}
+                      :radius $ option:unwrap-or (get shape-map :radius) 0
+                      :position $ unsafe-coerce
+                        option:unwrap-or (get shape-map :position) ([] 0 0)
+                        , 'List
+                      :fill $ hslx 200 80 80
+                      :on $ {}
           :examples $ []
           :schema $ :: 'Dynamic
         'run-command $ %{} 'CodeEntry (:doc |)
@@ -158,7 +220,10 @@
             defn run-command (tree c1 c2 slide-key d!)
               if
                 = 1 $ count tree
-                let[] (command p1 p2 p3) (first tree)
+                let[] (command p1 p2 p3)
+                  unsafe-coerce
+                    option:unwrap-or (first tree) ([])
+                    , 'List
                   case-default command (println "|Unknown command:" command)
                     |del-slide $ d! :del-slide slide-key
                     |add-slide $ if (some? slide-key) (d! :add-slide-after slide-key) (js/console.warn "|nil slide-key")
@@ -191,7 +256,8 @@
       :defs $ {}
         'dev? $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            def dev? $ = |dev (get-env |mode |release)
+            def dev? $ = |dev
+              option:unwrap-or (get-env |mode) |release
           :examples $ []
           :schema $ :: 'Dynamic
         'site $ %{} 'CodeEntry (:doc |)
@@ -223,8 +289,11 @@
           :code $ quote
             defn main! () (; js/console.log PIXI)
               if dev? $ load-console-formatter!
-              -> (new FontFaceObserver "|Josefin Sans") (.!load)
-                .!then $ fn (event) (render-app!)
+              .!then
+                unsafe-coerce
+                  .!load $ new FontFaceObserver "|Josefin Sans"
+                  , 'JsObject
+                fn (event) (render-app!)
               add-watch *store :change $ fn (store prev) (render-app!)
               render-control!
               start-control-loop! 8 on-control-event
@@ -312,16 +381,23 @@
                 :move-main-hint $ assoc store :main-hint op-data
                 :move-secondary-hint $ assoc store :secondary-hint op-data
                 :add-slide-after $ update store :slides
-                  fn (slides) (add-slide-after slides op-data)
+                  fn (slides-option)
+                    add-slide-after
+                      option:unwrap-or slides-option $ {}
+                      , op-data
                 :del-slide $ dissoc-in store ([] :slides op-data)
                 :switch-slide $ assoc store :slide-key op-data
                 :add-shape $ let
-                    slide-key $ :slide-key op-data
-                    shape-op $ :op op-data
+                    op-map $ unsafe-coerce op-data 'Map
+                    slide-key $ &map:get op-map :slide-key
+                    shape-op $ &map:get op-map :op
                   if (some? slide-key)
                     update-in store ([] :slides slide-key :logs)
-                      fn (logs)
+                      fn (logs-option)
                         let
+                            logs $ unsafe-coerce
+                              option:unwrap-or logs-option $ []
+                              , 'List
                             tree $ if (empty? logs) ([])
                               &map:get
                                 unsafe-coerce
