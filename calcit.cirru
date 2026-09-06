@@ -183,9 +183,6 @@
             phlox.comp.drag-point :refer $ comp-drag-point
             |shortid :as shortid
             respo-ui.core :as ui
-            memof.alias :refer $ memof-call
-            phlox.comp.drag-point :refer $ comp-drag-point
-            phlox.comp.button :refer $ comp-button
             phlox.input :refer $ request-text!
             phlox.comp.slider :refer $ comp-spin-slider
             phlox.complex :as complex
@@ -311,7 +308,7 @@
             defn updater (store op op-data op-id op-time)
               case-default op
                 do (println "|unknown op" op op-data) store
-                :states $ update-states store op-data
+                :states $ let[] (cursor data) op-data (update-states store cursor data)
                 :move-main-hint $ assoc store :main-hint op-data
                 :move-secondary-hint $ assoc store :secondary-hint op-data
                 :add-slide-after $ update store :slides
@@ -326,7 +323,11 @@
                       fn (logs)
                         let
                             tree $ if (empty? logs) ([])
-                              :snapshot $ last logs
+                              &map:get
+                                unsafe-coerce
+                                  option:unwrap $ last logs
+                                  , 'Map
+                                , :snapshot
                           conj logs $ {} (:op shape-op)
                             :snapshot $ conj tree shape-op
                 :hydrate-storage op-data
