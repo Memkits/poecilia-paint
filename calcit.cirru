@@ -3,14 +3,18 @@
   :about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `calcit query` to inspect and `calcit edit`/`calcit tree` to modify. Run `calcit docs agents --contract` before mutations; use `--full` for first orientation or changed contract digest. Manual edits must follow format and schema conventions, then run `calcit edit format`."
   :package |app
   :entries $ {} $ :default
-    {} (:description |) (:init-fn 'app.main/main!) (:mode :native)
-      :reload-fn 'app.main/reload!
+    {} (:description |) (:init-fn 'app.main/main!) (:mode :native) (:reload-fn 'app.main/reload!)
       :feature-policy $ {}
       :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/ |touch-control/
       :type-slots $ {}
   :files $ {}
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
+        'WindowHost $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ deftrait WindowHost (:innerHeight 'Number) (:innerWidth 'Number)
+          :examples $ []
+          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
+          :schema $ :: 'Trait
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-container (store)
             ; println |Store store $ :tab store
@@ -24,21 +28,23 @@
                 match (get slides slide-key)
                   (:none)
                     text $ {} (:text "|No Slide")
-                      (:style ({} (:font-size 60) (:font-weight 100) (:fill (hslx 0 100 50)) (:font-family ui/font-fancy)))
-                        :align :center
+                      :style $ {} (:font-size 60) (:font-weight 100)
+                        :fill $ hslx 0 100 50
+                        :font-family ui/font-fancy
+                      :align :center
                   (:some slide)
                     comp-slide (>> states slide-key) slide-key slide
                 comp-slide-tabs (keys slides) slide-key
                 comp-button $ {} (:text |Add)
                   :position $ [] 160 $ - 60
                     * 0.5 $ unsafe-coerce
-                      .-innerHeight $ unsafe-coerce js/window 'JsObject
+                      .-innerHeight $ unsafe-coerce js/window WindowHost
                       , 'Number
                   :on-pointertap $ fn (e d!) (d! :add-slide-after slide-key)
                 comp-button $ {} (:text |Command)
                   :position $ [] 220 $ - 60
                     * 0.5 $ unsafe-coerce
-                      .-innerHeight $ unsafe-coerce js/window 'JsObject
+                      .-innerHeight $ unsafe-coerce js/window WindowHost
                       , 'Number
                   :on-pointertap $ fn (e d!)
                     request-text! e
@@ -57,7 +63,7 @@
                 comp-button $ {} (:text |DEBUG)
                   :position $ [] 320 $ - 60
                     * 0.5 $ unsafe-coerce
-                      .-innerHeight $ unsafe-coerce js/window 'JsObject
+                      .-innerHeight $ unsafe-coerce js/window WindowHost
                       , 'Number
                   :on-pointertap $ fn (e d!) (js/console.warn |[DEBUG] store)
                 comp-drag-point (>> states :main-hint)
@@ -77,10 +83,11 @@
                     :fill $ hslx 250 90 70
                     :radius 6
                     :hide-text? true
-                    :on-change $ fn (pos d!)
-                      d! :move-secondary-hint pos
+                    :on-change $ fn (pos d!) (d! :move-secondary-hint pos)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] 'Dynamic
+            :features $ #{} :js-ffi
         'comp-slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide (states pointed-key slide)
             let
@@ -91,11 +98,11 @@
                 fallback-state $ {} (:pointer 0)
                   :spin-pos $ []
                     - 200 $ * 0.5 $ unsafe-coerce
-                      .-innerWidth $ unsafe-coerce js/window 'JsObject
+                      .-innerWidth $ unsafe-coerce js/window WindowHost
                       , 'Number
                     -
                       * 0.5 $ unsafe-coerce
-                        .-innerHeight $ unsafe-coerce js/window 'JsObject
+                        .-innerHeight $ unsafe-coerce js/window WindowHost
                         , 'Number
                       , 200
                 state $ unsafe-coerce
@@ -111,7 +118,7 @@
                         :text $ str $ &map:get (unsafe-coerce shape-op 'Map) :type
                         :position $ []
                           - 20 $ * 0.5 $ unsafe-coerce
-                            .-innerWidth $ unsafe-coerce js/window 'JsObject
+                            .-innerWidth $ unsafe-coerce js/window WindowHost
                             , 'Number
                           - 120 $ * idx 40
                         :on-pointertap $ fn (e d!) (println |shape-op shape-op)
@@ -129,10 +136,10 @@
                         , 'List
                       []
                         * 0.5 $ unsafe-coerce
-                          .-innerWidth $ unsafe-coerce js/window 'JsObject
+                          .-innerWidth $ unsafe-coerce js/window WindowHost
                           , 'Number
                         * 0.5 $ unsafe-coerce
-                          .-innerHeight $ unsafe-coerce js/window 'JsObject
+                          .-innerHeight $ unsafe-coerce js/window WindowHost
                           , 'Number
                     :unit 4
                     :min 0
@@ -143,7 +150,9 @@
                     :on-move $ fn (pos d!) (; println "|move to:" pos)
                       d! cursor $ assoc state :spin-pos pos
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] 'Dynamic 'Dynamic 'Dynamic
+            :features $ #{} :js-ffi
         'comp-slide-tabs $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide-tabs (slide-keys pointer)
             ; println |key $ -> slide-keys .to-list $ .sort
@@ -151,24 +160,26 @@
             let
                 slide-key-set $ unsafe-coerce slide-keys 'Set
               create-list :container ({})
-                -> slide-key-set .to-list
-                  .sort $ fn (a b) (&compare a b)
-                  .map-indexed $ fn (idx key)
+                -> (&set:to-list slide-key-set)
+                  sort $ fn (a b) (&compare a b)
+                  map-indexed $ fn (idx key)
                     [] key $ comp-button $ {} (:text key)
                       :position $ []
                         -
                           + 100 $ * idx 44
                           &* 0.5 $ unsafe-coerce
-                            .-innerWidth $ unsafe-coerce js/window 'JsObject
+                            .-innerWidth $ unsafe-coerce js/window WindowHost
                             , 'Number
                         - 20 $ * 0.5 $ unsafe-coerce
-                          .-innerHeight $ unsafe-coerce js/window 'JsObject
+                          .-innerHeight $ unsafe-coerce js/window WindowHost
                           , 'Number
                       :fill $ if (= key pointer) (hslx 60 80 30)
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] (:: 'Set 'String) 'Dynamic
+            :features $ #{} :js-ffi
         'render-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-shape (shape-op)
             let
@@ -200,7 +211,9 @@
                   :fill $ hslx 200 80 80
                   :on $ {}
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] 'Dynamic
+            :features $ #{} :js-ffi
         'run-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-command (tree c1 c2 slide-key d!)
             if
@@ -209,8 +222,7 @@
                 unsafe-coerce
                   option:unwrap-or (first tree) ([])
                   , 'List
-                case-default command
-                  println "|Unknown command:" command
+                case-default command (println "|Unknown command:" command)
                   |del-slide $ d! :del-slide slide-key
                   |add-slide $ if (some? slide-key) (d! :add-slide-after slide-key) (js/console.warn "|nil slide-key")
                   |add-circle $ d! :add-shape $ {} (:slide-key slide-key)
@@ -222,7 +234,9 @@
                       :sizes $ complex/minus c2 c1
               js/console.warn "|unknown tree:" tree
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+            :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
@@ -241,18 +255,12 @@
           :code $ quote $ def dev?
             = |dev $ option:unwrap-or (get-env |mode) |release
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Bool
         'site $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def site
-            {}
-              :dev-ui |http://localhost:8100/main.css
-              :release-ui |http://cdn.tiye.me/favored-fonts/main.css
-              :cdn-url |http://cdn.tiye.me/phlox/
-              :title |Phlox
-              :icon |http://cdn.tiye.me/logo/quamolit.png
-              :storage-key |phlox
+            {} (:dev-ui |http://localhost:8100/main.css) (:release-ui |http://cdn.tiye.me/favored-fonts/main.css) (:cdn-url |http://cdn.tiye.me/phlox/) (:title |Phlox) (:icon |http://cdn.tiye.me/logo/quamolit.png) (:storage-key |phlox)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Map 'Tag 'String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.main $ %{} 'FileEntry
@@ -260,7 +268,25 @@
         '*store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defatom *store schema/store
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
+        'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ deftrait FontFaceObserverHost
+            .load $ :: 'Fn $ {}
+              :args $ []
+              :return 'JsObject
+          :examples $ []
+          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
+          :schema $ :: 'Trait
+        'PromiseHost $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ deftrait PromiseHost
+            .then $ :: 'Fn $ {}
+              :args $ [] $ :: 'Fn
+                {} (:return 'Unit)
+                  :args $ [] 'Dynamic
+              :return 'Dynamic
+          :examples $ []
+          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
+          :schema $ :: 'Trait
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op op-data)
             when
@@ -269,41 +295,49 @@
             let
                 op-id $ nanoid
                 op-time $ js/Date.now
-              reset! *store $ updater @*store op op-data op-id op-time
+              reset! *store $ assert-type (updater @*store op op-data op-id op-time) (:: 'Map 'Tag 'Dynamic)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ [] 'Dynamic 'Dynamic
+            :features $ #{} :js-ffi
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             if dev? $ load-console-formatter!
-            .!then
-              unsafe-coerce
-                .!load $ new FontFaceObserver "|Josefin Sans"
-                , 'JsObject
-              fn (event) (render-app!)
-            add-watch *store :change $ fn (store prev) (render-app!)
+            let
+                observer $ unsafe-coerce (new FontFaceObserver "|Josefin Sans") FontFaceObserverHost
+                font-load $ unsafe-coerce (.!load observer) PromiseHost
+              .!then font-load $ fn (event)
+                render-app! $ {}
+            add-watch *store :change $ fn (store prev)
+              render-app! $ {}
             render-control!
             start-control-loop! 8 on-control-event
             println "|App Started"
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ []
+            :features $ #{} :js-ffi
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
-              do (println "|Code updated.")
-                clear-phlox-caches!
-                remove-watch *store :change
-                add-watch *store :change $ fn (store prev) (render-app!)
-                render-app!
+              do (println "|Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
+                add-watch *store :change $ fn (store prev)
+                  render-app! $ {}
+                render-app! $ {}
                 replace-control-loop! 8 on-control-event
                 hud! |ok~ |Ok
               hud! |error build-errors
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ []
+            :features $ #{} :js-ffi
         'render-app! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn render-app! (? arg)
-            render! (comp-container @*store) dispatch! $ or arg $ {}
+          :code $ quote $ defn render-app! (arg)
+            render! (comp-container @*store) dispatch! arg
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ [] 'Dynamic
+            :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require (|pixi.js :as PIXI)
@@ -323,12 +357,12 @@
           :code $ quote $ def action-log
             {} (:op nil) (:snapshot nil)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Map 'Tag 'Dynamic
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
             {} $ :logs $ do action-log ([])
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Map 'Tag 'Dynamic
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
@@ -338,7 +372,7 @@
               :main-hint $ [] 10 10
               :secondary-hint $ [] 40 40
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
@@ -355,7 +389,11 @@
                   assoc slides next-key schema/slide
                 assoc-after slides base-key schema/slide
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {}
+            :args $ []
+              :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+              , 'Dynamic
+            :return $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-data op-id op-time)
             case-default op
@@ -363,34 +401,41 @@
               :states $ let[] (cursor data) op-data $ update-states store cursor data
               :move-main-hint $ assoc store :main-hint op-data
               :move-secondary-hint $ assoc store :secondary-hint op-data
-              :add-slide-after $ update store :slides $ fn (slides-option)
-                add-slide-after
-                  option:unwrap-or slides-option $ {}
-                  , op-data
+              :add-slide-after $ assoc store :slides $ add-slide-after
+                assert-type
+                  option:unwrap-or (get store :slides) ({})
+                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+                , op-data
               :del-slide $ dissoc-in store $ [] :slides op-data
               :switch-slide $ assoc store :slide-key op-data
               :add-shape $ let
-                  op-map $ unsafe-coerce op-data 'Map
+                  op-map $ assert-type op-data $ :: 'Map 'Tag 'Dynamic
                   slide-key $ &map:get op-map :slide-key
                   shape-op $ &map:get op-map :op
                 if (some? slide-key)
-                  update-in store ([] :slides slide-key :logs)
-                    fn (logs-option)
-                      let
-                          logs $ unsafe-coerce
-                            option:unwrap-or logs-option $ []
-                            , 'List
-                          tree $ if (empty? logs) ([])
+                  let
+                      slide-key $ assert-type slide-key 'String
+                    let
+                        logs $ assert-type
+                          option:unwrap-or
+                            get-in store $ [] :slides slide-key :logs
+                            []
+                          :: 'List $ :: 'Map 'Tag 'Dynamic
+                        tree $ if (empty? logs) ([])
+                          assert-type
                             &map:get
-                              unsafe-coerce
+                              assert-type
                                 option:unwrap $ last logs
-                                , 'Map
+                                :: 'Map 'Tag 'Dynamic
                               , :snapshot
+                            :: 'List 'Dynamic
+                      assoc-in store ([] :slides slide-key :logs)
                         conj logs $ {} (:op shape-op)
                           :snapshot $ conj tree shape-op
               :hydrate-storage op-data
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require
