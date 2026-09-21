@@ -59,6 +59,7 @@ jobs:
         yarn vite build --base=./
 
     - name: Install verified rsync
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         set -euo pipefail
         curl --fail --location --silent --show-error \
