@@ -1,7 +1,7 @@
 {
   "version": "0.4.10",
   "dependencies": {
-    "@calcit/procs": "0.14.17",
+    "@calcit/procs": "0.17.1",
     "@pixi/core": "7.2.4",
     "@pixi/filter-drop-shadow": "^5.2.0",
     "@quamolit/phlox-utils": "^0.0.2",
