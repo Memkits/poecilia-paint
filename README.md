@@ -11,8 +11,8 @@ yarn dev
 ```
 
 Use Calcit/procs 0.27.0, Node 24 and Yarn 4.18.0 with canonical
-`calcit.cirru` / `deps.cirru` only. Development compiles once, then watches Calcit
-`js -w` alongside Vite; either process exiting stops the other. `yarn build` and
+`calcit.cirru` / `deps.cirru` only. `yarn dev` compiles initially and starts Vite.
+For live Calcit edits, run `calcit calcit.cirru js -w` in another terminal. `yarn build` and
 `yarn release` remain one-shot compile/build commands.
 
 CI keeps canonical formatting, strict entry and all application public checks,
