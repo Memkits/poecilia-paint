@@ -19,13 +19,16 @@
           :code $ quote $ defn comp-container (store)
             ; println |Store store $ :tab store
             let
-                store-map $ unsafe-coerce store 'Map
+                store-map store
                 cursor $ []
-                states $ unsafe-coerce (&map:get store-map :states) 'Map
-                slides $ unsafe-coerce (&map:get store-map :slides) 'Map
-                slide-key $ &map:get store-map :slide-key
+                states $ :states store-map
+                slides $ :slides store-map
+                slide-key $ :slide-key store-map
               container ({})
-                match (get slides slide-key)
+                match
+                  match slide-key
+                    (:none) (Option :none)
+                    (:some id) (get slides id)
                   (:none)
                     text $ {} (:text "|No Slide")
                       :style $ {} (:font-size 60) (:font-weight 100)
@@ -33,158 +36,146 @@
                         :font-family ui/font-fancy
                       :align :center
                   (:some slide)
-                    comp-slide (>> states slide-key) slide-key slide
+                    comp-slide
+                      >> states $ .unwrap slide-key
+                      .unwrap slide-key
+                      , slide
                 comp-slide-tabs (keys slides) slide-key
                 comp-button $ {} (:text |Add)
                   :position $ [] 160 $ - 60
-                    * 0.5 $ unsafe-coerce
-                      .-innerHeight $ unsafe-coerce js/window WindowHost
-                      , 'Number
-                  :on-pointertap $ fn (e d!) (d! :add-slide-after slide-key)
+                    * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
+                  :on-pointertap $ fn (e d!)
+                    d! :add-slide-after $ schema/key-or-nil slide-key
                 comp-button $ {} (:text |Command)
                   :position $ [] 220 $ - 60
-                    * 0.5 $ unsafe-coerce
-                      .-innerHeight $ unsafe-coerce js/window WindowHost
-                      , 'Number
+                    * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
                   :on-pointertap $ fn (e d!)
                     request-text! e
                       {} (:placeholder |Command)
                         :style $ {} $ :font-family ui/font-code
                       fn (code)
-                        run-command (parse-cirru code)
-                          unsafe-coerce
-                            option:unwrap-or (get store-map :main-hint) ([] 10 10)
-                            , 'List
-                          unsafe-coerce
-                            option:unwrap-or (get store-map :secondary-hint) ([] 40 40)
-                            , 'List
-                          , slide-key d!
+                        match
+                          run-command
+                            parse-cirru-list $ decode-map-as code 'String
+                            :main-hint store-map
+                            :secondary-hint store-map
+                            , slide-key
+                          (:none) &unit
+                          (:some op) (d! op)
                         ; println |Store store $ :tab store
+                        , &unit
                 comp-button $ {} (:text |DEBUG)
                   :position $ [] 320 $ - 60
-                    * 0.5 $ unsafe-coerce
-                      .-innerHeight $ unsafe-coerce js/window WindowHost
-                      , 'Number
+                    * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
                   :on-pointertap $ fn (e d!) (js/console.warn |[DEBUG] store)
                 comp-drag-point (>> states :main-hint)
                   {}
-                    :position $ unsafe-coerce
-                      option:unwrap-or (get store-map :main-hint) ([] 10 10)
-                      , 'List
+                    :position $ :main-hint store-map
                     :fill $ hslx 120 90 80
                     :radius 8
                     :hide-text? true
                     :on-change $ fn (pos d!) (d! :move-main-hint pos)
                 comp-drag-point (>> states :secondary-hint)
                   {}
-                    :position $ unsafe-coerce
-                      option:unwrap-or (get store-map :secondary-hint) ([] 40 40)
-                      , 'List
+                    :position $ :secondary-hint store-map
                     :fill $ hslx 250 90 70
                     :radius 6
                     :hide-text? true
                     :on-change $ fn (pos d!) (d! :move-secondary-hint pos)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
+            :args $ [] 'app.schema/Store
             :features $ #{} :js-ffi
         'comp-slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide (states pointed-key slide)
             let
-                states-map $ unsafe-coerce states 'Map
-                slide-map $ unsafe-coerce slide 'Map
-                logs $ unsafe-coerce (&map:get slide-map :logs) 'List
-                cursor $ &map:get states-map :cursor
+                states-map states
+                slide-map slide
+                logs $ :logs slide-map
+                cursor $ decode-map-as
+                  .unwrap-or (get states-map :cursor) ([])
+                  :: 'List 'Dynamic
                 fallback-state $ {} (:pointer 0)
                   :spin-pos $ []
-                    - 200 $ * 0.5 $ unsafe-coerce
-                      .-innerWidth $ unsafe-coerce js/window WindowHost
-                      , 'Number
+                    - 200 $ * 0.5 $ .-innerWidth (unsafe-coerce js/window WindowHost)
                     -
-                      * 0.5 $ unsafe-coerce
-                        .-innerHeight $ unsafe-coerce js/window WindowHost
-                        , 'Number
+                      * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
                       , 200
-                state $ unsafe-coerce
-                  option:unwrap-or (get states-map :data) fallback-state
-                  , 'Map
-                pointer $ &map:get state :pointer
+                state $ decode-map-as
+                  decode-map-as
+                    .unwrap-or (get states-map :data) fallback-state
+                    :: 'Map 'Tag 'Dynamic
+                  , schema/SlideState
+                pointer $ :pointer state
               container ({})
                 create-list :container ({})
                   -> logs $ map-indexed $ fn (idx log)
                     let
-                        shape-op $ &map:get (unsafe-coerce log 'Map) :op
+                        shape-op $ :op log
                       [] idx $ comp-button $ {}
-                        :text $ str $ &map:get (unsafe-coerce shape-op 'Map) :type
+                        :text $ str $ .unwrap-or (get shape-op :type) nil
                         :position $ []
-                          - 20 $ * 0.5 $ unsafe-coerce
-                            .-innerWidth $ unsafe-coerce js/window WindowHost
-                            , 'Number
+                          - 20 $ * 0.5 $ .-innerWidth (unsafe-coerce js/window WindowHost)
                           - 120 $ * idx 40
                         :on-pointertap $ fn (e d!) (println |shape-op shape-op)
                 create-list :container ({})
                   -> logs $ map-indexed $ fn (idx log)
-                    [] idx $ render-shape $ &map:get (unsafe-coerce log 'Map) :op
+                    [] idx $ render-shape $ :op log
                 comp-spin-slider (>> states :spin)
                   {} (:value pointer)
-                    :position $ unsafe-coerce
-                      option:unwrap-or (get state :spin-pos) ([] 0 0)
-                      , 'List
-                    :spin-pivot $ complex/add
-                      unsafe-coerce
-                        option:unwrap-or (get state :spin-pos) ([] 0 0)
-                        , 'List
+                    :position $ :spin-pos state
+                    :spin-pivot $ complex/add (:spin-pos state)
                       []
-                        * 0.5 $ unsafe-coerce
-                          .-innerWidth $ unsafe-coerce js/window WindowHost
-                          , 'Number
-                        * 0.5 $ unsafe-coerce
-                          .-innerHeight $ unsafe-coerce js/window WindowHost
-                          , 'Number
+                        * 0.5 $ .-innerWidth $ unsafe-coerce js/window WindowHost
+                        * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
                     :unit 4
                     :min 0
                     :max 100
                     :fraction 2
                     :on-change $ fn (value d!)
-                      d! cursor $ assoc state :pointer value
+                      d! cursor $ {} (:pointer value)
+                        :spin-pos $ :spin-pos state
                     :on-move $ fn (pos d!) (; println "|move to:" pos)
-                      d! cursor $ assoc state :spin-pos pos
+                      d! cursor $ {}
+                        :pointer $ :pointer state
+                        :spin-pos pos
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
+            :args $ [] (:: 'Map 'Dynamic 'Dynamic) 'String 'app.schema/Slide
             :features $ #{} :js-ffi
         'comp-slide-tabs $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide-tabs (slide-keys pointer)
             ; println |key $ -> slide-keys .to-list $ .sort
-              fn (a b) (&compare a b)
+              fn (a b) (.compare a b)
             let
-                slide-key-set $ unsafe-coerce slide-keys 'Set
+                slide-key-set slide-keys
               create-list :container ({})
-                -> (&set:to-list slide-key-set)
-                  sort $ fn (a b) (&compare a b)
+                -> (.to-list slide-key-set)
+                  sort $ fn (a b) (.compare a b)
                   map-indexed $ fn (idx key)
                     [] key $ comp-button $ {} (:text key)
                       :position $ []
                         -
                           + 100 $ * idx 44
-                          &* 0.5 $ unsafe-coerce
-                            .-innerWidth $ unsafe-coerce js/window WindowHost
-                            , 'Number
-                        - 20 $ * 0.5 $ unsafe-coerce
-                          .-innerHeight $ unsafe-coerce js/window WindowHost
-                          , 'Number
-                      :fill $ if (= key pointer) (hslx 60 80 30)
+                          &* 0.5 $ .-innerWidth $ unsafe-coerce js/window WindowHost
+                        - 20 $ * 0.5 $ .-innerHeight (unsafe-coerce js/window WindowHost)
+                      :fill $ if
+                        match pointer
+                          (:none) false
+                          (:some selected) (= key selected)
+                        hslx 60 80 30
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] (:: 'Set 'String) 'Dynamic
+            :args $ [] (:: 'Set 'String) (:: 'Option 'String)
             :features $ #{} :js-ffi
         'render-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-shape (shape-op)
             let
-                shape-map $ unsafe-coerce shape-op 'Map
-              case-default (&map:get shape-map :type)
+                shape-map shape-op
+              case-default
+                .unwrap-or (get shape-map :type) nil
                 text $ {}
                   :text $ str "|Unknown: " shape-op
                   :style $ {} (:font-size 14) (:font-weight 500)
@@ -192,63 +183,74 @@
                     :font-family ui/font-fancy
                   :align :center
                 :rect $ rect $ {}
-                  :position $ unsafe-coerce
-                    option:unwrap-or (get shape-map :position) ([] 0 0)
-                    , 'List
-                  :size $ unsafe-coerce
-                    option:unwrap-or (get shape-map :sizes) ([] 0 0)
-                    , 'List
+                  :position $ decode-map-as
+                    .unwrap-or (get shape-map :position) ([] 0 0)
+                    :: 'List 'Number
+                  :size $ decode-map-as
+                    .unwrap-or (get shape-map :sizes) ([] 0 0)
+                    :: 'List 'Number
                   :line-style $ {} (:width 4)
                     :color $ hslx 0 80 50
                     :alpha 1
                   :fill $ hslx 200 80 80
                   :on $ {}
                 :circle $ circle $ {}
-                  :radius $ option:unwrap-or (get shape-map :radius) 0
-                  :position $ unsafe-coerce
-                    option:unwrap-or (get shape-map :position) ([] 0 0)
-                    , 'List
+                  :radius $ decode-map-as
+                    .unwrap-or (get shape-map :radius) 0
+                    , 'Number
+                  :position $ decode-map-as
+                    .unwrap-or (get shape-map :position) ([] 0 0)
+                    :: 'List 'Number
                   :fill $ hslx 200 80 80
                   :on $ {}
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
+            :args $ [] $ :: 'Map 'Tag 'Dynamic
             :features $ #{} :js-ffi
         'run-command $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn run-command (tree c1 c2 slide-key d!)
+          :code $ quote $ defn run-command (tree c1 c2 slide-key)
             if
               = 1 $ count tree
-              let[] (command p1 p2 p3)
-                unsafe-coerce
-                  option:unwrap-or (first tree) ([])
-                  , 'List
-                case-default command (println "|Unknown command:" command)
-                  |del-slide $ d! :del-slide slide-key
-                  |add-slide $ if (some? slide-key) (d! :add-slide-after slide-key) (js/console.warn "|nil slide-key")
-                  |add-circle $ d! :add-shape $ {} (:slide-key slide-key)
-                    :op $ {} (:type :circle)
-                      :position $ complex/divide-by (complex/add c1 c2) 2
-                      :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
-                  |add-rect $ d! :add-shape $ {} (:slide-key slide-key)
-                    :op $ {} (:type :rect) (:position c1)
-                      :sizes $ complex/minus c2 c1
-              js/console.warn "|unknown tree:" tree
+              let
+                  statement $ decode-map-as
+                    .unwrap $ first tree
+                    :: 'List 'Dynamic
+                  command $ .unwrap-or (first statement) nil
+                case-default command
+                  do (println "|Unknown command:" command) (Option :none)
+                  |del-slide $ Option :some $ :: :del-slide (schema/key-or-nil slide-key)
+                  |add-slide $ if (.some? slide-key)
+                    Option :some $ :: :add-slide-after $ schema/key-or-nil slide-key
+                    do (js/console.warn "|nil slide-key") (Option :none)
+                  |add-circle $ Option :some $ :: :add-shape
+                    {}
+                      :slide-key $ schema/key-or-nil slide-key
+                      :op $ {} (:type :circle)
+                        :position $ complex/divide-by (complex/add c1 c2) 2
+                        :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
+                  |add-rect $ Option :some $ :: :add-shape
+                    {}
+                      :slide-key $ schema/key-or-nil slide-key
+                      :op $ {} (:type :rect) (:position c1)
+                        :sizes $ complex/minus c2 c1
+              do (js/console.warn "|unknown tree:" tree) (Option :none)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+          :schema $ :: 'Fn $ {}
+            :args $ [] (:: 'List 'Dynamic) (:: 'List 'Number) (:: 'List 'Number) (:: 'Option 'String)
             :features $ #{} :js-ffi
+            :return $ :: 'Option 'Enum
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
             phlox.core :refer $ g hslx rect circle text container graphics create-list >>
             phlox.comp.button :refer $ comp-button
             phlox.comp.drag-point :refer $ comp-drag-point
-            |shortid :as shortid
             respo-ui.core :as ui
             phlox.input :refer $ request-text!
             phlox.comp.slider :refer $ comp-spin-slider
             phlox.complex :as complex
             phlox.math :refer $ vec-length
+            app.schema :as schema
     'app.config $ %{} 'FileEntry
       :defs $ {}
         'dev? $ %{} 'CodeEntry (:doc |)
@@ -266,9 +268,9 @@
     'app.main $ %{} 'FileEntry
       :defs $ {}
         '*store $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *store schema/store
+          :code $ quote $ defref *store schema/store
           :examples $ []
-          :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'Ref 'app.schema/Store
         'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait FontFaceObserverHost
             .load $ :: 'Fn $ {}
@@ -288,17 +290,18 @@
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
           :schema $ :: 'Trait
         'dispatch! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn dispatch! (op op-data)
-            when
-              and dev? $ not= op :states
-              println |dispatch! op op-data
+          :code $ quote $ defn dispatch! (op)
+            when dev? $ match op
+              (:states _ _) nil
+              _ $ println |dispatch! op
             let
-                op-id $ nanoid
-                op-time $ js/Date.now
-              reset! *store $ assert-type (updater @*store op op-data op-id op-time) (:: 'Map 'Tag 'Dynamic)
+                op-id $ decode-map-as (nanoid) 'String
+                op-time $ decode-map-as (js/Date.now) 'Number
+              reset! *store $ updater @*store (schema/normalize-op op) op-id op-time
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic 'Dynamic
+            :args $ [] 'Enum
             :features $ #{} :js-ffi
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
@@ -308,11 +311,12 @@
                 font-load $ unsafe-coerce (.!load observer) PromiseHost
               .!then font-load $ fn (event)
                 render-app! $ {}
-            add-watch *store :change $ fn (store prev)
+            add-watch! *store :change $ fn (store prev)
               render-app! $ {}
             render-control!
             start-control-loop! 8 on-control-event
             println "|App Started"
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -320,13 +324,14 @@
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
-              do (println "|Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
-                add-watch *store :change $ fn (store prev)
+              do (println "|Code updated.") (clear-phlox-caches!) (remove-watch! *store :change)
+                add-watch! *store :change $ fn (store prev)
                   render-app! $ {}
                 render-app! $ {}
                 replace-control-loop! 8 on-control-event
                 hud! |ok~ |Ok
               hud! |error build-errors
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -336,7 +341,7 @@
             render! (comp-container @*store) dispatch! arg
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic
+            :args $ [] $ :: 'Map 'Tag 'Dynamic
             :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
@@ -353,93 +358,174 @@
             touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
     'app.schema $ %{} 'FileEntry
       :defs $ {}
-        'action-log $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def action-log
-            {} (:op nil) (:snapshot nil)
+        'ActionLog $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct ActionLog
+            :op $ :: 'Map 'Tag 'Dynamic
+            :snapshot $ :: 'List $ :: 'Map 'Tag 'Dynamic
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'StructDef
+        'Op $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defenum Op (:noop)
+            :states (:: 'List 'Dynamic) 'Dynamic
+            :move-main-hint $ :: 'List 'Number
+            :move-secondary-hint $ :: 'List 'Number
+            :add-slide-after $ :: 'Option 'String
+            :del-slide $ :: 'Option 'String
+            :switch-slide 'String
+            :add-shape (:: 'Option 'String) (:: 'Map 'Tag 'Dynamic)
+            :hydrate-storage 'Store
+          :examples $ []
+          :schema $ :: 'EnumDef
+        'Slide $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct Slide
+            :logs $ :: 'List 'ActionLog
+          :examples $ []
+          :schema $ :: 'StructDef
+        'SlideState $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct SlideState (:pointer 'Number)
+            :spin-pos $ :: 'List 'Number
+          :examples $ []
+          :schema $ :: 'StructDef
+        'Store $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct Store
+            :states $ :: 'Map 'Dynamic 'Dynamic
+            :slide-key $ :: 'Option 'String
+            :slides $ :: 'Map 'String 'Slide
+            :main-hint $ :: 'List 'Number
+            :secondary-hint $ :: 'List 'Number
+          :examples $ []
+          :schema $ :: 'StructDef
+        'decode-store $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn decode-store (value)
+            let
+                data $ decode-map-as value $ :: 'Map 'Tag 'Dynamic
+                normalized $ if
+                  nil? $ .unwrap-or (get data :slide-key) nil
+                  dissoc data :slide-key
+                  , data
+              decode-map-as normalized Store
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Store)
+            :args $ [] 'Dynamic
+        'key-or-nil $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn key-or-nil (key)
+            match key
+              (:none) nil
+              (:some id) id
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ [] $ :: 'Option 'String
+        'normalize-op $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn normalize-op (op)
+            match op
+              (:states cursor data)
+                Op :states
+                  decode-map-as cursor $ :: 'List 'Dynamic
+                  , data
+              (:move-main-hint pos)
+                Op :move-main-hint $ decode-map-as pos $ :: 'List 'Number
+              (:move-secondary-hint pos)
+                Op :move-secondary-hint $ decode-map-as pos $ :: 'List 'Number
+              (:add-slide-after key)
+                Op :add-slide-after $ optional-key key
+              (:del-slide key)
+                Op :del-slide $ optional-key key
+              (:switch-slide key)
+                Op :switch-slide $ decode-map-as key 'String
+              (:add-shape data)
+                let
+                    payload $ decode-map-as data $ :: 'Map 'Tag 'Dynamic
+                  Op :add-shape
+                    optional-key $ .unwrap $ get payload :slide-key
+                    decode-map-as
+                      .unwrap $ get payload :op
+                      :: 'Map 'Tag 'Dynamic
+              (:hydrate-storage data)
+                Op :hydrate-storage $ decode-store data
+              _ $ do (println |unknown-op op) (Op :noop)
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Op)
+            :args $ [] 'Enum
+        'optional-key $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn optional-key (value)
+            if (nil? value) (Option :none)
+              Option :some $ decode-map-as value 'String
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] 'Dynamic
+            :return $ :: 'Option 'String
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
-            {} $ :logs $ do action-log ([])
+            Slide :logs $ []
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'app.schema/Slide
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
-            {}
-              :states $ {} $ :cursor ([])
-              :slide-key nil
-              :slides $ do slide $ {}
-              :main-hint $ [] 10 10
-              :secondary-hint $ [] 40 40
+            Store :states
+              {} $ :cursor $ []
+              , :slide-key (Option :none) :slides ({}) :main-hint ([] 10 10) :secondary-hint $ [] 40 40
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ :: 'app.schema/Store
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
       :defs $ {}
         'add-slide-after $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn add-slide-after (slides base-key)
-            if (nil? base-key)
-              if (empty? slides)
-                {} $ mid-id schema/slide
-                assoc-append slides schema/slide
-              if (empty? slides)
-                let
-                    next-key $ key-after slides base-key
-                  assoc slides next-key schema/slide
-                assoc-after slides base-key schema/slide
+            match base-key
+              (:none)
+                if (empty? slides)
+                  {} $ mid-id schema/slide
+                  assoc-append slides schema/slide
+              (:some key)
+                if (empty? slides)
+                  assoc slides (key-after slides key) schema/slide
+                  assoc-after slides key schema/slide
           :examples $ []
           :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-              , 'Dynamic
-            :return $ :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
+            :args $ [] (:: 'Map 'String 'app.schema/Slide) (:: 'Option 'String)
+            :return $ :: 'Map 'String 'app.schema/Slide
         'updater $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn updater (store op op-data op-id op-time)
-            case-default op
-              do (println "|unknown op" op op-data) store
-              :states $ let[] (cursor data) op-data $ update-states store cursor data
-              :move-main-hint $ assoc store :main-hint op-data
-              :move-secondary-hint $ assoc store :secondary-hint op-data
-              :add-slide-after $ assoc store :slides $ add-slide-after
-                assert-type
-                  option:unwrap-or (get store :slides) ({})
-                  :: 'Map 'String $ :: 'Map 'Tag 'Dynamic
-                , op-data
-              :del-slide $ dissoc-in store $ [] :slides op-data
-              :switch-slide $ assoc store :slide-key op-data
-              :add-shape $ let
-                  op-map $ assert-type op-data $ :: 'Map 'Tag 'Dynamic
-                  slide-key $ &map:get op-map :slide-key
-                  shape-op $ &map:get op-map :op
-                if (some? slide-key)
-                  let
-                      slide-key $ assert-type slide-key 'String
-                    let
-                        logs $ assert-type
-                          option:unwrap-or
-                            get-in store $ [] :slides slide-key :logs
-                            []
-                          :: 'List $ :: 'Map 'Tag 'Dynamic
-                        tree $ if (empty? logs) ([])
-                          assert-type
-                            &map:get
-                              assert-type
-                                option:unwrap $ last logs
-                                :: 'Map 'Tag 'Dynamic
-                              , :snapshot
-                            :: 'List 'Dynamic
-                      assoc-in store ([] :slides slide-key :logs)
-                        conj logs $ {} (:op shape-op)
-                          :snapshot $ conj tree shape-op
-              :hydrate-storage op-data
+          :code $ quote $ defn updater (store op op-id op-time)
+            match op
+              (:noop) store
+              (:states cursor data)
+                assoc store :states $ decode-map-as
+                  assoc-in (:states store) (conj cursor :data) data
+                  :: 'Map 'Dynamic 'Dynamic
+              (:move-main-hint pos) (assoc store :main-hint pos)
+              (:move-secondary-hint pos) (assoc store :secondary-hint pos)
+              (:add-slide-after key)
+                assoc store :slides $ add-slide-after (:slides store) key
+              (:del-slide key)
+                match key
+                  (:none) store
+                  (:some id)
+                    assoc store :slides $ dissoc (:slides store) id
+              (:switch-slide key)
+                assoc store :slide-key $ Option :some key
+              (:add-shape key shape)
+                match key
+                  (:none) store
+                  (:some id)
+                    match
+                      get (:slides store) id
+                      (:none) store
+                      (:some slide)
+                        let
+                            logs $ :logs slide
+                            tree $ match (last logs)
+                              (:none) ([])
+                              (:some log) (:snapshot log)
+                            entry $ schema/ActionLog :op shape :snapshot $ conj tree shape
+                          assoc store :slides $ assoc (:slides store) id $ assoc slide :logs (conj logs entry)
+              (:hydrate-storage data) data
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'app.schema/Store)
+            :args $ [] 'app.schema/Store 'app.schema/Op 'String 'Number
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require
-            [] phlox.cursor :refer $ [] update-states
-            bisection-key.core :refer $ bisect mid-id
+            bisection-key.core :refer $ mid-id
             bisection-key.util :refer $ assoc-after assoc-append key-after
             app.schema :as schema
