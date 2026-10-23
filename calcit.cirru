@@ -167,7 +167,7 @@
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
             :args $ [] (:: 'Set 'String) (:: 'Option 'String)
             :features $ #{} :js-ffi
         'render-shape $ %{} 'CodeEntry (:doc |)

@@ -37,6 +37,8 @@ Touch Control 0.0.32、Bisection Key 0.0.35、Pointed Prompt 0.0.20。
 旧 Option 调用改为公开方法，字面量命令/形状分支使用 `match`；原默认分支、
 几何计算、Add 不自动选择和无选择绘图保持状态的行为不变。
 热更新继续通过 `hud!` 显示成功或错误，不改为抛异常。
+页签组件的返回合同明确为 `PhloxElement`，不再用 Dynamic 隐藏其已知输出；
+输入集合、选中值、排序与组件执行代码保持不变。
 
 Vite base and released COS action v1.2.0 share the frontend prefix: production remains
 `Memkits/poecilia-paint/`, while previews use `pr/<number>/<run-id>/<attempt>/`.
