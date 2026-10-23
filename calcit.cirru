@@ -167,21 +167,15 @@
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
             :args $ [] (:: 'Set 'String) (:: 'Option 'String)
             :features $ #{} :js-ffi
         'render-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-shape (shape-op)
             let
                 shape-map shape-op
-              case-default
+              match
                 .unwrap-or (get shape-map :type) nil
-                text $ {}
-                  :text $ str "|Unknown: " shape-op
-                  :style $ {} (:font-size 14) (:font-weight 500)
-                    :fill $ hslx 0 100 50
-                    :font-family ui/font-fancy
-                  :align :center
                 :rect $ rect $ {}
                   :position $ decode-map-as
                     .unwrap-or (get shape-map :position) ([] 0 0)
@@ -203,6 +197,12 @@
                     :: 'List 'Number
                   :fill $ hslx 200 80 80
                   :on $ {}
+                _ $ text $ {}
+                  :text $ str "|Unknown: " shape-op
+                  :style $ {} (:font-size 14) (:font-weight 500)
+                    :fill $ hslx 0 100 50
+                    :font-family ui/font-fancy
+                  :align :center
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
             :args $ [] $ :: 'Map 'Tag 'Dynamic
@@ -216,8 +216,7 @@
                     .unwrap $ first tree
                     :: 'List 'Dynamic
                   command $ .unwrap-or (first statement) nil
-                case-default command
-                  do (println "|Unknown command:" command) (Option :none)
+                match command
                   |del-slide $ Option :some $ :: :del-slide (schema/key-or-nil slide-key)
                   |add-slide $ if (.some? slide-key)
                     Option :some $ :: :add-slide-after $ schema/key-or-nil slide-key
@@ -233,6 +232,7 @@
                       :slide-key $ schema/key-or-nil slide-key
                       :op $ {} (:type :rect) (:position c1)
                         :sizes $ complex/minus c2 c1
+                  _ $ do (println "|Unknown command:" command) (Option :none)
               do (js/console.warn "|unknown tree:" tree) (Option :none)
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -255,7 +255,7 @@
       :defs $ {}
         'dev? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def dev?
-            = |dev $ option:unwrap-or (get-env |mode) |release
+            = |dev $ .unwrap-or (get-env |mode) |release
           :examples $ []
           :schema $ :: 'Bool
         'site $ %{} 'CodeEntry (:doc |)
