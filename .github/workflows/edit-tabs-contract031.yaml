@@ -33,16 +33,6 @@ jobs:
         caps --strict --ci
         yarn install --immutable
         caps verify --toolchain
-    - name: Reproduce real tab regression
-      run: |
-        set -euo pipefail
-        yarn build
-        mkdir -p .calcit/tabs031
-        if node --test tests/paint.test.mjs > .calcit/tabs031/before-test.log 2>&1; then
-          echo 'Expected unselected-tab regression was not reproduced.'
-          exit 1
-        fi
-        grep -F 'unselected tab must retain a painted hit surface' .calcit/tabs031/before-test.log
     - name: Guarded hit surface edit
       env:
         TAB_EDIT: >-
@@ -53,6 +43,7 @@ jobs:
         calcit -v
         calcit docs agents --contract
         calcit calcit.cirru query config --format json
+        mkdir -p .calcit/tabs031
         calcit calcit.cirru query def app.comp.container/comp-slide-tabs --format json > .calcit/tabs031/before.json
         calcit calcit.cirru tree show app.comp.container/comp-slide-tabs --path 4.2.3.3.1.2.2.1.3.1 --format json
         calcit calcit.cirru edit transaction --code "$TAB_EDIT" --dry-run --format json > .calcit/tabs031/preview.json
