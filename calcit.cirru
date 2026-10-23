@@ -164,6 +164,7 @@
                           (:none) false
                           (:some selected) (= key selected)
                         hslx 60 80 30
+                        hslx 0 0 20
                       :align-right? false
                       :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
           :examples $ []
