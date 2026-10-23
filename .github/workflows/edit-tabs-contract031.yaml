@@ -1,0 +1,75 @@
+name: Temporary formal tab hit surface edit
+
+on:
+  push:
+    branches: [migrate/poecilia-paint-formal031]
+    paths: [.github/workflows/edit-tabs-contract031.yaml]
+
+permissions:
+  contents: read
+
+jobs:
+  edit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v6.5.0
+      with:
+        node-version: 24
+        package-manager-cache: false
+    - uses: calcit-lang/setup-calcit@v1.5.0
+      with:
+        tools: calcit,caps
+        caps-version: "0.1.1"
+        deps-file: deps.cirru
+    - name: Resolve formal graph
+      run: |
+        set -euo pipefail
+        corepack enable
+        corepack prepare yarn@4.18.0 --activate
+        caps --strict --ci
+        yarn install --immutable
+        caps verify --toolchain
+    - name: Reproduce real tab regression
+      run: |
+        set -euo pipefail
+        yarn build
+        mkdir -p .calcit/tabs031
+        if node --test tests/paint.test.mjs > .calcit/tabs031/before-test.log 2>&1; then
+          echo 'Expected unselected-tab regression was not reproduced.'
+          exit 1
+        fi
+        grep -F 'unselected tab must retain a painted hit surface' .calcit/tabs031/before-test.log
+    - name: Guarded hit surface edit
+      env:
+        TAB_EDIT: >-
+          [["tree","insert","app.comp.container/comp-slide-tabs","--path","4.2.3.3.1.2.2.1.3.1","--at","append-child","--input-format","cirru","--code","quote $ hslx 0 0 20"]]
+      run: |
+        set -euo pipefail
+        test "$(git hash-object calcit.cirru)" = 898c2ca151fd6447401d707df68df64b06b73b60
+        calcit -v
+        calcit docs agents --contract
+        calcit calcit.cirru query config --format json
+        calcit calcit.cirru query def app.comp.container/comp-slide-tabs --format json > .calcit/tabs031/before.json
+        calcit calcit.cirru tree show app.comp.container/comp-slide-tabs --path 4.2.3.3.1.2.2.1.3.1 --format json
+        calcit calcit.cirru edit transaction --code "$TAB_EDIT" --dry-run --format json > .calcit/tabs031/preview.json
+        revision=$(jq -er '.scoped_revision' .calcit/tabs031/preview.json)
+        calcit calcit.cirru edit transaction --code "$TAB_EDIT" --expect-revision "$revision" --format json > .calcit/tabs031/applied.json
+        calcit calcit.cirru query def app.comp.container/comp-slide-tabs --format json > .calcit/tabs031/after.json
+        calcit calcit.cirru edit format
+        calcit calcit.cirru --check-only --all-defs > .calcit/tabs031/all-defs.log
+        calcit calcit.cirru fix --workflow strict --verify --format json > .calcit/tabs031/strict.json
+        jq -e '.data.workflow.status == "passed" and .diagnostics == []' .calcit/tabs031/strict.json
+        yarn build
+        node --test tests/paint.test.mjs | tee .calcit/tabs031/after-test.log
+        cp calcit.cirru .calcit/tabs031/calcit.cirru
+        git hash-object calcit.cirru
+    - uses: actions/upload-artifact@v7.0.1
+      with:
+        name: tab-hit031-${{ github.run_id }}
+        path: .calcit/tabs031
+        if-no-files-found: error
+        retention-days: 7

@@ -7,11 +7,11 @@ import { updater } from "../js-out/app.updater.mjs";
 // Phlox reads the browser user agent at import time; these tests do not render PIXI.
 const previousWindow = globalThis.window;
 globalThis.window = { navigator: { userAgent: "node" } };
-const { run_command } = await import("../js-out/app.comp.container.mjs");
+const { run_command, comp_slide_tabs } = await import("../js-out/app.comp.container.mjs");
 if (previousWindow === undefined) delete globalThis.window;
 else globalThis.window = previousWindow;
 
-const t = c.init_tags(["slides", "slide-key", "logs", "op", "snapshot", "type", "position", "sizes", "radius", "main-hint", "secondary-hint", "states", "spin", "data", "pointer", "spin-pos", "hydrate-storage"]);
+const t = c.init_tags(["slides", "slide-key", "logs", "op", "snapshot", "type", "position", "sizes", "radius", "main-hint", "secondary-hint", "states", "spin", "data", "pointer", "spin-pos", "hydrate-storage", "children", "props", "fill"]);
 const read = (value, key) => c.option_$o_unwrap(c.get(value, t[key]));
 const step = (value, message) => updater(value, normalize_op(message), "fixture", 0);
 const send = (value, text) => step(value, c.parse_cirru_edn(text));
@@ -24,6 +24,18 @@ test("slide selection and actual drawing commands retain geometry and snapshots"
   let value = send(store, ":: :add-slide-after nil");
   const key = c._$n_set_$o_to_list(c.keys(read(value, "slides"))).toArray()[0];
   assert.equal(c.option_$o_none_$q_(read(value, "slide-key")), true); // Add does not select.
+  const savedWindow = globalThis.window;
+  globalThis.window = { innerWidth: 1280, innerHeight: 720 };
+  try {
+    const tabs = comp_slide_tabs(c.keys(read(value, "slides")), read(value, "slide-key"));
+    const button = read(tabs, "children").toArray()[0].toArray()[1];
+    const background = read(button, "children").toArray()[0].toArray()[1];
+    assert.equal(typeof read(read(background, "props"), "fill"), "number",
+      "unselected tab must retain a painted hit surface");
+  } finally {
+    if (savedWindow === undefined) delete globalThis.window;
+    else globalThis.window = savedWindow;
+  }
   value = send(value, `:: :switch-slide |${key}`);
   value = command(value, "add-rect");
   value = send(value, ":: :move-secondary-hint ([] 160 130)");
