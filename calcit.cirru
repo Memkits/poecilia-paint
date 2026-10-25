@@ -5,16 +5,11 @@
   :entries $ {} $ :default
     {} (:description |) (:init-fn 'app.main/main!) (:mode :js) (:reload-fn 'app.main/reload!) (:target :browser)
       :feature-policy $ {}
-      :modules $ [] |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/ |touch-control/
+      :modules $ [] |respo.calcit/ |respo-ui.calcit/ |phlox/ |pointed-prompt/ |bisection-key/ |touch-control/ |js-ffi/
       :type-slots $ {}
   :files $ {}
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
-        'WindowHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait WindowHost (:innerHeight 'Number) (:innerWidth 'Number)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-container (store)
             ; println |Store store $ :tab store
@@ -43,12 +38,12 @@
                 comp-slide-tabs (keys slides) slide-key
                 comp-button $ {} (:text |Add)
                   :position $ [] 160 $ - 60
-                    * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
+                    * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
                     d! :add-slide-after $ schema/key-or-nil slide-key
                 comp-button $ {} (:text |Command)
                   :position $ [] 220 $ - 60
-                    * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
+                    * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
                     request-text! e
                       {} (:placeholder |Command)
@@ -66,7 +61,7 @@
                         , &unit
                 comp-button $ {} (:text |DEBUG)
                   :position $ [] 320 $ - 60
-                    * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
+                    * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!) (js/console.warn |[DEBUG] store)
                 comp-drag-point (>> states :main-hint)
                   {}
@@ -97,9 +92,9 @@
                   :: 'List 'Dynamic
                 fallback-state $ {} (:pointer 0)
                   :spin-pos $ []
-                    - 200 $ * 0.5 $ .-innerWidth (unsafe-coerce js/window WindowHost)
+                    - 200 $ * 0.5 $ .-inner-width (window-host)
                     -
-                      * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
+                      * 0.5 $ .-inner-height $ window-host
                       , 200
                 state $ decode-map-as
                   decode-map-as
@@ -115,7 +110,7 @@
                       [] idx $ comp-button $ {}
                         :text $ str $ .unwrap-or (get shape-op :type) nil
                         :position $ []
-                          - 20 $ * 0.5 $ .-innerWidth (unsafe-coerce js/window WindowHost)
+                          - 20 $ * 0.5 $ .-inner-width (window-host)
                           - 120 $ * idx 40
                         :on-pointertap $ fn (e d!) (println |shape-op shape-op)
                 create-list :container ({})
@@ -126,8 +121,8 @@
                     :position $ :spin-pos state
                     :spin-pivot $ complex/add (:spin-pos state)
                       []
-                        * 0.5 $ .-innerWidth $ unsafe-coerce js/window WindowHost
-                        * 0.5 $ .-innerHeight $ unsafe-coerce js/window WindowHost
+                        * 0.5 $ .-inner-width $ window-host
+                        * 0.5 $ .-inner-height $ window-host
                     :unit 4
                     :min 0
                     :max 100
@@ -157,8 +152,8 @@
                       :position $ []
                         -
                           + 100 $ * idx 44
-                          &* 0.5 $ .-innerWidth $ unsafe-coerce js/window WindowHost
-                        - 20 $ * 0.5 $ .-innerHeight (unsafe-coerce js/window WindowHost)
+                          &* 0.5 $ .-inner-width $ window-host
+                        - 20 $ * 0.5 $ .-inner-height (window-host)
                       :fill $ if
                         match pointer
                           (:none) false
@@ -211,7 +206,7 @@
         'run-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-command (tree c1 c2 slide-key)
             if
-              = 1 $ count tree
+              = 1 $ .len tree
               let
                   statement $ decode-map-as
                     .unwrap $ first tree
@@ -252,6 +247,7 @@
             phlox.complex :as complex
             phlox.math :refer $ vec-length
             app.schema :as schema
+            js-ffi.browser :refer $ window-host
     'app.config $ %{} 'FileEntry
       :defs $ {}
         'dev? $ %{} 'CodeEntry (:doc |)
