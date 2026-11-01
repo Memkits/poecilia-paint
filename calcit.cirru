@@ -40,11 +40,17 @@
                   :position $ [] 160 $ - 60
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
-                    d! :add-slide-after $ schema/key-or-nil slide-key
+                    hint-fn $ Fn Dynamic
+                      Fn Enum $ -> Unit
+                      -> Unit
+                    d! $ :: :add-slide-after $ schema/key-or-nil slide-key
                 comp-button $ {} (:text |Command)
                   :position $ [] 220 $ - 60
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
+                    hint-fn $ Fn Dynamic
+                      Fn Enum $ -> Unit
+                      -> Unit
                     request-text! e
                       {} (:placeholder |Command)
                         :style $ {} $ :font-family ui/font-code
@@ -69,18 +75,24 @@
                     :fill $ hslx 120 90 80
                     :radius 8
                     :hide-text? true
-                    :on-change $ fn (pos d!) (d! :move-main-hint pos)
+                    :on-change $ fn (pos d!)
+                      hint-fn $ Fn (List Number)
+                        Fn Enum $ -> Unit
+                        -> Unit
+                      d! $ :: :move-main-hint pos
                 comp-drag-point (>> states :secondary-hint)
                   {}
                     :position $ :secondary-hint store-map
                     :fill $ hslx 250 90 70
                     :radius 6
                     :hide-text? true
-                    :on-change $ fn (pos d!) (d! :move-secondary-hint pos)
+                    :on-change $ fn (pos d!)
+                      hint-fn $ Fn (List Number)
+                        Fn Enum $ -> Unit
+                        -> Unit
+                      d! $ :: :move-secondary-hint pos
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
-            :args $ [] 'app.schema/Store
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn app.schema/Store (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'comp-slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide (states pointed-key slide)
             let
@@ -128,16 +140,21 @@
                     :max 100
                     :fraction 2
                     :on-change $ fn (value d!)
-                      d! cursor $ {} (:pointer value)
+                      hint-fn $ Fn Number
+                        Fn Enum $ -> Unit
+                        -> Unit
+                      d! $ :: :states cursor $ {} (:pointer value)
                         :spin-pos $ :spin-pos state
-                    :on-move $ fn (pos d!) (; println "|move to:" pos)
-                      d! cursor $ {}
+                    :on-move $ fn (pos d!)
+                      hint-fn $ Fn (List Number)
+                        Fn Enum $ -> Unit
+                        -> Unit
+                      ; println "|move to:" pos
+                      d! $ :: :states cursor $ {}
                         :pointer $ :pointer state
                         :spin-pos pos
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic) 'String 'app.schema/Slide
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (Map Dynamic Dynamic) String app.schema/Slide (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'comp-slide-tabs $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide-tabs (slide-keys pointer)
             ; println |key $ -> slide-keys .to-list $ .sort
@@ -161,11 +178,14 @@
                         hslx 60 80 30
                         hslx 0 0 20
                       :align-right? false
-                      :on-pointertap $ fn (e d!) (; println |key key) (d! :switch-slide key)
+                      :on-pointertap $ fn (e d!)
+                        hint-fn $ Fn Dynamic
+                          Fn Enum $ -> Unit
+                          -> Unit
+                        ; println |key key
+                        d! $ :: :switch-slide key
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
-            :args $ [] (:: 'Set 'String) (:: 'Option 'String)
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (Set String) (Option String) (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'render-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-shape (shape-op)
             let
@@ -200,9 +220,7 @@
                     :font-family ui/font-fancy
                   :align :center
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
-            :args $ [] $ :: 'Map 'Tag 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'run-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-command (tree c1 c2 slide-key)
             if
@@ -231,10 +249,9 @@
                   _ $ do (println "|Unknown command:" command) (Option :none)
               do (js/console.warn "|unknown tree:" tree) (Option :none)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'Dynamic) (:: 'List 'Number) (:: 'List 'Number) (:: 'Option 'String)
-            :features $ #{} :js-ffi
-            :return $ :: 'Option 'Enum
+          :schema $ quote $ Fn (List Dynamic) (List Number) (List Number) (Option String)
+            -> $ Option Enum
+            :features :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
@@ -254,12 +271,12 @@
           :code $ quote $ def dev?
             = |dev $ .unwrap-or (get-env |mode) |release
           :examples $ []
-          :schema $ :: 'Bool
+          :schema $ quote Bool
         'site $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def site
             {} (:dev-ui |http://localhost:8100/main.css) (:release-ui |http://cdn.tiye.me/favored-fonts/main.css) (:cdn-url |http://cdn.tiye.me/phlox/) (:title |Phlox) (:icon |http://cdn.tiye.me/logo/quamolit.png) (:storage-key |phlox)
           :examples $ []
-          :schema $ :: 'Map 'Tag 'String
+          :schema $ quote $ Map Tag String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.main $ %{} 'FileEntry
@@ -267,25 +284,21 @@
         '*store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *store schema/store
           :examples $ []
-          :schema $ :: 'Ref 'app.schema/Store
+          :schema $ quote $ Ref app.schema/Store
         'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait FontFaceObserverHost
-            .load $ :: 'Fn $ {}
-              :args $ []
-              :return 'JsObject
+            .load $ quote $ Fn (-> JsObject)
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
+          :schema $ quote Trait
         'PromiseHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait PromiseHost
-            .then $ :: 'Fn $ {}
-              :args $ [] $ :: 'Fn
-                {} (:return 'Unit)
-                  :args $ [] 'Dynamic
-              :return 'Dynamic
+            .then $ quote $ Fn
+              Fn Dynamic $ -> Unit
+              -> Dynamic
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
+          :schema $ quote Trait
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when dev? $ match op
@@ -297,9 +310,7 @@
               reset! *store $ updater @*store (schema/normalize-op op) op-id op-time
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Enum
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Enum (-> Unit) (:features :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             if dev? $ load-console-formatter!
@@ -315,9 +326,7 @@
             println "|App Started"
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -330,16 +339,12 @@
               hud! |error build-errors
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! (arg)
             render! (comp-container @*store) dispatch! arg
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] $ :: 'Map 'Tag 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> Unit) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require (|pixi.js :as PIXI)
@@ -357,41 +362,45 @@
       :defs $ {}
         'ActionLog $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct ActionLog
-            :op $ :: 'Map 'Tag 'Dynamic
-            :snapshot $ :: 'List $ :: 'Map 'Tag 'Dynamic
+            :op $ quote $ Map Tag Dynamic
+            :snapshot $ quote $ List (Map Tag Dynamic)
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'Op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Op (:noop)
-            :states (:: 'List 'Dynamic) 'Dynamic
-            :move-main-hint $ :: 'List 'Number
-            :move-secondary-hint $ :: 'List 'Number
-            :add-slide-after $ :: 'Option 'String
-            :del-slide $ :: 'Option 'String
+            :states
+              quote $ List Dynamic
+              , 'Dynamic
+            :move-main-hint $ quote $ List Number
+            :move-secondary-hint $ quote $ List Number
+            :add-slide-after $ quote $ Option String
+            :del-slide $ quote $ Option String
             :switch-slide 'String
-            :add-shape (:: 'Option 'String) (:: 'Map 'Tag 'Dynamic)
+            :add-shape
+              quote $ Option String
+              quote $ Map Tag Dynamic
             :hydrate-storage 'Store
           :examples $ []
-          :schema $ :: 'EnumDef
+          :schema $ quote EnumDef
         'Slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Slide
-            :logs $ :: 'List 'ActionLog
+            :logs $ quote $ List ActionLog
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'SlideState $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct SlideState (:pointer 'Number)
-            :spin-pos $ :: 'List 'Number
+            :spin-pos $ quote $ List Number
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'Store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Store
-            :states $ :: 'Map 'Dynamic 'Dynamic
-            :slide-key $ :: 'Option 'String
-            :slides $ :: 'Map 'String 'Slide
-            :main-hint $ :: 'List 'Number
-            :secondary-hint $ :: 'List 'Number
+            :states $ quote $ Map Dynamic Dynamic
+            :slide-key $ quote $ Option String
+            :slides $ quote $ Map String Slide
+            :main-hint $ quote $ List Number
+            :secondary-hint $ quote $ List Number
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'decode-store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-store (value)
             let
@@ -402,16 +411,14 @@
                   , data
               decode-map-as normalized Store
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'app.schema/Store)
-            :args $ [] 'Dynamic
+          :schema $ quote $ Fn Dynamic (-> app.schema/Store)
         'key-or-nil $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn key-or-nil (key)
             match key
               (:none) nil
               (:some id) id
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] $ :: 'Option 'String
+          :schema $ quote $ Fn (Option String) (-> Dynamic)
         'normalize-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn normalize-op (op)
             match op
@@ -441,28 +448,26 @@
                 Op :hydrate-storage $ decode-store data
               _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'app.schema/Op)
-            :args $ [] 'Enum
+          :schema $ quote $ Fn Enum (-> app.schema/Op)
         'optional-key $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn optional-key (value)
             if (nil? value) (Option :none)
               Option :some $ decode-map-as value 'String
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Dynamic
-            :return $ :: 'Option 'String
+          :schema $ quote $ Fn Dynamic
+            -> $ Option String
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
             Slide :logs $ []
           :examples $ []
-          :schema $ :: 'app.schema/Slide
+          :schema $ quote app.schema/Slide
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             Store :states
               {} $ :cursor $ []
               , :slide-key (Option :none) :slides ({}) :main-hint ([] 10 10) :secondary-hint $ [] 40 40
           :examples $ []
-          :schema $ :: 'app.schema/Store
+          :schema $ quote app.schema/Store
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
@@ -479,9 +484,8 @@
                   assoc slides (key-after slides key) schema/slide
                   assoc-after slides key schema/slide
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'String 'app.schema/Slide) (:: 'Option 'String)
-            :return $ :: 'Map 'String 'app.schema/Slide
+          :schema $ quote $ Fn (Map String app.schema/Slide) (Option String)
+            -> $ Map String app.schema/Slide
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -518,8 +522,7 @@
                           assoc store :slides $ assoc (:slides store) id $ assoc slide :logs (conj logs entry)
               (:hydrate-storage data) data
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'app.schema/Store)
-            :args $ [] 'app.schema/Store 'app.schema/Op 'String 'Number
+          :schema $ quote $ Fn app.schema/Store app.schema/Op String Number (-> app.schema/Store)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require
