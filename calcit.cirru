@@ -41,15 +41,15 @@
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
                     hint-fn $ Fn Dynamic
-                      Fn Enum $ -> Unit
+                      Fn app.schema/Op $ -> Unit
                       -> Unit
-                    d! $ :: :add-slide-after $ schema/key-or-nil slide-key
+                    d! $ schema/Op :add-slide-after slide-key
                 comp-button $ {} (:text |Command)
                   :position $ [] 220 $ - 60
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
                     hint-fn $ Fn Dynamic
-                      Fn Enum $ -> Unit
+                      Fn app.schema/Op $ -> Unit
                       -> Unit
                     request-text! e
                       {} (:placeholder |Command)
@@ -77,9 +77,9 @@
                     :hide-text? true
                     :on-change $ fn (pos d!)
                       hint-fn $ Fn (List Number)
-                        Fn Enum $ -> Unit
+                        Fn app.schema/Op $ -> Unit
                         -> Unit
-                      d! $ :: :move-main-hint pos
+                      d! $ schema/Op :move-main-hint pos
                 comp-drag-point (>> states :secondary-hint)
                   {}
                     :position $ :secondary-hint store-map
@@ -88,9 +88,9 @@
                     :hide-text? true
                     :on-change $ fn (pos d!)
                       hint-fn $ Fn (List Number)
-                        Fn Enum $ -> Unit
+                        Fn app.schema/Op $ -> Unit
                         -> Unit
-                      d! $ :: :move-secondary-hint pos
+                      d! $ schema/Op :move-secondary-hint pos
           :examples $ []
           :schema $ quote $ Fn app.schema/Store (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'comp-slide $ %{} 'CodeEntry (:doc |)
@@ -101,7 +101,7 @@
                 logs $ :logs slide-map
                 cursor $ decode-map-as
                   .unwrap-or (get states-map :cursor) ([])
-                  :: 'List 'Dynamic
+                  List Dynamic
                 fallback-state $ {} (:pointer 0)
                   :spin-pos $ []
                     - 200 $ * 0.5 $ .-inner-width (window-host)
@@ -111,7 +111,7 @@
                 state $ decode-map-as
                   decode-map-as
                     .unwrap-or (get states-map :data) fallback-state
-                    :: 'Map 'Tag 'Dynamic
+                    Map Tag Dynamic
                   , schema/SlideState
                 pointer $ :pointer state
               container ({})
@@ -120,14 +120,16 @@
                     let
                         shape-op $ :op log
                       [] idx $ comp-button $ {}
-                        :text $ str $ .unwrap-or (get shape-op :type) nil
+                        :text $ match (get shape-op :type)
+                          (:some kind) (str kind)
+                          (:none) |
                         :position $ []
                           - 20 $ * 0.5 $ .-inner-width (window-host)
                           - 120 $ * idx 40
                         :on-pointertap $ fn (e d!) (println |shape-op shape-op)
                 create-list :container ({})
                   -> logs $ map-indexed $ fn (idx log)
-                    [] idx $ render-shape $ :op log
+                    [] idx $ render-shape $ schema/decode-shape (:op log)
                 comp-spin-slider (>> states :spin)
                   {} (:value pointer)
                     :position $ :spin-pos state
@@ -141,18 +143,15 @@
                     :fraction 2
                     :on-change $ fn (value d!)
                       hint-fn $ Fn Number
-                        Fn Enum $ -> Unit
+                        Fn app.schema/Op $ -> Unit
                         -> Unit
-                      d! $ :: :states cursor $ {} (:pointer value)
-                        :spin-pos $ :spin-pos state
+                      d! $ schema/Op :slide-state cursor $ assoc state :pointer value
                     :on-move $ fn (pos d!)
                       hint-fn $ Fn (List Number)
-                        Fn Enum $ -> Unit
+                        Fn app.schema/Op $ -> Unit
                         -> Unit
                       ; println "|move to:" pos
-                      d! $ :: :states cursor $ {}
-                        :pointer $ :pointer state
-                        :spin-pos pos
+                      d! $ schema/Op :slide-state cursor $ assoc state :spin-pos pos
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic) String app.schema/Slide (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'comp-slide-tabs $ %{} 'CodeEntry (:doc |)
@@ -180,47 +179,39 @@
                       :align-right? false
                       :on-pointertap $ fn (e d!)
                         hint-fn $ Fn Dynamic
-                          Fn Enum $ -> Unit
+                          Fn app.schema/Op $ -> Unit
                           -> Unit
                         ; println |key key
-                        d! $ :: :switch-slide key
+                        d! $ schema/Op :switch-slide key
           :examples $ []
           :schema $ quote $ Fn (Set String) (Option String) (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'render-shape $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn render-shape (shape-op)
-            let
-                shape-map shape-op
-              match
-                .unwrap-or (get shape-map :type) nil
-                :rect $ rect $ {}
-                  :position $ decode-map-as
-                    .unwrap-or (get shape-map :position) ([] 0 0)
-                    :: 'List 'Number
-                  :size $ decode-map-as
-                    .unwrap-or (get shape-map :sizes) ([] 0 0)
-                    :: 'List 'Number
+          :code $ quote $ defn render-shape (shape)
+            match shape
+              (app.schema/RectShape data)
+                rect $ {}
+                  :position $ :position data
+                  :size $ :sizes data
                   :line-style $ {} (:width 4)
                     :color $ hslx 0 80 50
                     :alpha 1
                   :fill $ hslx 200 80 80
                   :on $ {}
-                :circle $ circle $ {}
-                  :radius $ decode-map-as
-                    .unwrap-or (get shape-map :radius) 0
-                    , 'Number
-                  :position $ decode-map-as
-                    .unwrap-or (get shape-map :position) ([] 0 0)
-                    :: 'List 'Number
+              (app.schema/CircleShape data)
+                circle $ {}
+                  :radius $ :radius data
+                  :position $ :position data
                   :fill $ hslx 200 80 80
                   :on $ {}
-                _ $ text $ {}
-                  :text $ str "|Unknown: " shape-op
+              (app.schema/LegacyShape data)
+                text $ {}
+                  :text $ str "|Unknown: " $ :wire data
                   :style $ {} (:font-size 14) (:font-weight 500)
                     :fill $ hslx 0 100 50
                     :font-family ui/font-fancy
                   :align :center
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> phlox.schema/PhloxElement) (:features :js-ffi)
+          :schema $ quote $ Fn app.schema/Shape (-> phlox.schema/PhloxElement)
         'run-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-command (tree c1 c2 slide-key)
             if
@@ -228,29 +219,24 @@
               let
                   statement $ decode-map-as
                     .unwrap $ first tree
-                    :: 'List 'Dynamic
-                  command $ .unwrap-or (first statement) nil
+                    List Dynamic
+                  command $ .unwrap-or (first statement) |
                 match command
-                  |del-slide $ Option :some $ :: :del-slide (schema/key-or-nil slide-key)
+                  |del-slide $ Option :some $ schema/Op :del-slide slide-key
                   |add-slide $ if (.some? slide-key)
-                    Option :some $ :: :add-slide-after $ schema/key-or-nil slide-key
+                    Option :some $ schema/Op :add-slide-after slide-key
                     do (js/console.warn "|nil slide-key") (Option :none)
-                  |add-circle $ Option :some $ :: :add-shape
-                    {}
-                      :slide-key $ schema/key-or-nil slide-key
-                      :op $ {} (:type :circle)
-                        :position $ complex/divide-by (complex/add c1 c2) 2
-                        :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
-                  |add-rect $ Option :some $ :: :add-shape
-                    {}
-                      :slide-key $ schema/key-or-nil slide-key
-                      :op $ {} (:type :rect) (:position c1)
-                        :sizes $ complex/minus c2 c1
+                  |add-circle $ Option :some $ schema/Op :add-shape slide-key
+                    schema/CircleShape :position
+                      complex/divide-by (complex/add c1 c2) 2
+                      , :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
+                  |add-rect $ Option :some $ schema/Op :add-shape slide-key
+                    schema/RectShape :position c1 :sizes $ complex/minus c2 c1
                   _ $ do (println "|Unknown command:" command) (Option :none)
               do (js/console.warn "|unknown tree:" tree) (Option :none)
           :examples $ []
           :schema $ quote $ Fn (List Dynamic) (List Number) (List Number) (Option String)
-            -> $ Option Enum
+            -> $ Option app.schema/Op
             :features :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
@@ -285,39 +271,27 @@
           :code $ quote $ defref *store schema/store
           :examples $ []
           :schema $ quote $ Ref app.schema/Store
-        'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait FontFaceObserverHost
-            .load $ quote $ Fn (-> JsObject)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ quote Trait
-        'PromiseHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait PromiseHost
-            .then $ quote $ Fn
-              Fn Dynamic $ -> Unit
-              -> Dynamic
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ quote Trait
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
-            when dev? $ match op
-              (:states _ _) nil
-              _ $ println |dispatch! op
+            when
+              and dev? $ match op
+                (:states _ _) false
+                (:slide-state _ _) false
+                _ true
+              println |dispatch! op
             let
                 op-id $ decode-map-as (nanoid) 'String
                 op-time $ decode-map-as (js/Date.now) 'Number
-              reset! *store $ updater @*store (schema/normalize-op op) op-id op-time
+              reset! *store $ updater @*store op op-id op-time
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Enum (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn app.schema/Op (-> Unit) (:features :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             if dev? $ load-console-formatter!
-            let
-                observer $ unsafe-coerce (new FontFaceObserver "|Josefin Sans") FontFaceObserverHost
-                font-load $ unsafe-coerce (.!load observer) PromiseHost
-              .!then font-load $ fn (event)
+            ffi-then
+              ffi-load-font $ new FontFaceObserver "|Josefin Sans"
+              fn (_event)
                 render-app! $ {}
             add-watch! *store :change $ fn (store prev)
               render-app! $ {}
@@ -342,13 +316,18 @@
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! (arg)
-            render! (comp-container @*store) dispatch! arg
+            render! (comp-container @*store)
+              fn (op)
+                if (enum? op)
+                  dispatch! $ schema/normalize-op op
+                  raise |expected-poecilia-event
+              , arg
           :examples $ []
           :schema $ quote $ Fn (Map Tag Dynamic) (-> Unit) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require (|pixi.js :as PIXI)
-            phlox.core :refer $ render! clear-phlox-caches! on-control-event
+            phlox.core :refer $ render! clear-phlox-caches! on-control-event ffi-load-font ffi-then
             app.comp.container :refer $ comp-container
             app.schema :as schema
             app.config :refer $ dev?
@@ -362,93 +341,142 @@
       :defs $ {}
         'ActionLog $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct ActionLog
-            :op $ quote $ Map Tag Dynamic
-            :snapshot $ quote $ List (Map Tag Dynamic)
+            :op $ Map Tag Dynamic
+            :snapshot $ List $ Map Tag Dynamic
+          :examples $ []
+          :schema $ quote StructDef
+        'CircleShape $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct CircleShape (:radius Number)
+            :position $ List Number
+          :examples $ []
+          :schema $ quote StructDef
+        'LegacyShape $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct LegacyShape
+            :wire $ Map Tag Dynamic
           :examples $ []
           :schema $ quote StructDef
         'Op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Op (:noop)
-            :states
-              quote $ List Dynamic
-              , 'Dynamic
-            :move-main-hint $ quote $ List Number
-            :move-secondary-hint $ quote $ List Number
-            :add-slide-after $ quote $ Option String
-            :del-slide $ quote $ Option String
-            :switch-slide 'String
-            :add-shape
-              quote $ Option String
-              quote $ Map Tag Dynamic
-            :hydrate-storage 'Store
+            :states (List Dynamic) Dynamic
+            :move-main-hint $ List Number
+            :move-secondary-hint $ List Number
+            :add-slide-after $ Option String
+            :del-slide $ Option String
+            :switch-slide String
+            :add-shape (Option String) Shape
+            :slide-state (List Dynamic) SlideState
+            :hydrate-storage Store
           :examples $ []
           :schema $ quote EnumDef
+        'RectShape $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct RectShape
+            :position $ List Number
+            :sizes $ List Number
+          :examples $ []
+          :schema $ quote StructDef
+        'Shape $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion Shape RectShape CircleShape LegacyShape
+          :examples $ []
+          :schema $ quote UnionDef
         'Slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Slide
-            :logs $ quote $ List ActionLog
+            :logs $ List ActionLog
           :examples $ []
           :schema $ quote StructDef
         'SlideState $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defstruct SlideState (:pointer 'Number)
-            :spin-pos $ quote $ List Number
+          :code $ quote $ defstruct SlideState (:pointer Number)
+            :spin-pos $ List Number
           :examples $ []
           :schema $ quote StructDef
         'Store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Store
-            :states $ quote $ Map Dynamic Dynamic
-            :slide-key $ quote $ Option String
-            :slides $ quote $ Map String Slide
-            :main-hint $ quote $ List Number
-            :secondary-hint $ quote $ List Number
+            :states $ Map Dynamic Dynamic
+            :slide-key $ Option String
+            :slides $ Map String Slide
+            :main-hint $ List Number
+            :secondary-hint $ List Number
           :examples $ []
           :schema $ quote StructDef
+        'decode-shape $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn decode-shape (wire)
+            match
+              .unwrap-or (get wire :type) :unknown
+              :rect $ RectShape :position
+                decode-map-as
+                  .unwrap-or (get wire :position) ([] 0 0)
+                  List Number
+                , :sizes $ decode-map-as
+                  .unwrap-or (get wire :sizes) ([] 0 0)
+                  List Number
+              :circle $ CircleShape :position
+                decode-map-as
+                  .unwrap-or (get wire :position) ([] 0 0)
+                  List Number
+                , :radius $ decode-map-as
+                  .unwrap-or (get wire :radius) 0
+                  , Number
+              _ $ LegacyShape :wire wire
+          :examples $ []
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> app.schema/Shape)
         'decode-store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-store (value)
             let
-                data $ decode-map-as value $ :: 'Map 'Tag 'Dynamic
-                normalized $ if
-                  nil? $ .unwrap-or (get data :slide-key) nil
-                  dissoc data :slide-key
-                  , data
+                data $ decode-map-as value $ Map Tag Dynamic
+                normalized $ match (get data :slide-key)
+                  (:none) data
+                  (:some key)
+                    if (nil? key) (dissoc data :slide-key) data
               decode-map-as normalized Store
           :examples $ []
           :schema $ quote $ Fn Dynamic (-> app.schema/Store)
-        'key-or-nil $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn key-or-nil (key)
-            match key
-              (:none) nil
-              (:some id) id
+        'encode-shape $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn encode-shape (shape)
+            match shape
+              (RectShape rect)
+                {} (:type :rect)
+                  :position $ :position rect
+                  :sizes $ :sizes rect
+              (CircleShape circle)
+                {} (:type :circle)
+                  :position $ :position circle
+                  :radius $ :radius circle
+              (LegacyShape legacy) (:wire legacy)
           :examples $ []
-          :schema $ quote $ Fn (Option String) (-> Dynamic)
+          :schema $ quote $ Fn app.schema/Shape
+            -> $ Map Tag Dynamic
         'normalize-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn normalize-op (op)
-            match op
-              (:states cursor data)
-                Op :states
-                  decode-map-as cursor $ :: 'List 'Dynamic
-                  , data
-              (:move-main-hint pos)
-                Op :move-main-hint $ decode-map-as pos $ :: 'List 'Number
-              (:move-secondary-hint pos)
-                Op :move-secondary-hint $ decode-map-as pos $ :: 'List 'Number
-              (:add-slide-after key)
-                Op :add-slide-after $ optional-key key
-              (:del-slide key)
-                Op :del-slide $ optional-key key
-              (:switch-slide key)
-                Op :switch-slide $ decode-map-as key 'String
-              (:add-shape data)
-                let
-                    payload $ decode-map-as data $ :: 'Map 'Tag 'Dynamic
-                  Op :add-shape
-                    optional-key $ .unwrap $ get payload :slide-key
-                    decode-map-as
-                      .unwrap $ get payload :op
-                      :: 'Map 'Tag 'Dynamic
-              (:hydrate-storage data)
-                Op :hydrate-storage $ decode-store data
-              _ $ do (println |unknown-op op) (Op :noop)
+            if
+              = (enum-definition op) (Option :some Op)
+              decode-map-as op app.schema/Op
+              match op
+                (:states cursor data)
+                  Op :states
+                    decode-map-as cursor $ List Dynamic
+                    , data
+                (:move-main-hint pos)
+                  Op :move-main-hint $ decode-map-as pos $ List Number
+                (:move-secondary-hint pos)
+                  Op :move-secondary-hint $ decode-map-as pos $ List Number
+                (:add-slide-after key)
+                  Op :add-slide-after $ optional-key key
+                (:del-slide key)
+                  Op :del-slide $ optional-key key
+                (:switch-slide key)
+                  Op :switch-slide $ decode-map-as key 'String
+                (:add-shape data)
+                  let
+                      payload $ decode-map-as data $ Map Tag Dynamic
+                    Op :add-shape
+                      optional-key $ .unwrap $ get payload :slide-key
+                      LegacyShape :wire $ decode-map-as
+                        .unwrap $ get payload :op
+                        Map Tag Dynamic
+                (:hydrate-storage data)
+                  Op :hydrate-storage $ decode-store data
+                _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
-          :schema $ quote $ Fn Enum (-> app.schema/Op)
+          :schema $ quote $ Fn AnyEnum (-> app.schema/Op)
         'optional-key $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn optional-key (value)
             if (nil? value) (Option :none)
@@ -493,7 +521,11 @@
               (:states cursor data)
                 assoc store :states $ decode-map-as
                   assoc-in (:states store) (conj cursor :data) data
-                  :: 'Map 'Dynamic 'Dynamic
+                  Map Dynamic Dynamic
+              (:slide-state cursor state)
+                assoc store :states $ decode-map-as
+                  assoc-in (:states store) (conj cursor :data) (&struct:to-map state)
+                  Map Dynamic Dynamic
               (:move-main-hint pos) (assoc store :main-hint pos)
               (:move-secondary-hint pos) (assoc store :secondary-hint pos)
               (:add-slide-after key)
@@ -518,7 +550,8 @@
                             tree $ match (last logs)
                               (:none) ([])
                               (:some log) (:snapshot log)
-                            entry $ schema/ActionLog :op shape :snapshot $ conj tree shape
+                            wire $ schema/encode-shape shape
+                            entry $ schema/ActionLog :op wire :snapshot $ conj tree wire
                           assoc store :slides $ assoc (:slides store) id $ assoc slide :logs (conj logs entry)
               (:hydrate-storage data) data
           :examples $ []
