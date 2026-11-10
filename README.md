@@ -22,7 +22,7 @@ yarn build
 node --test tests/paint.test.mjs
 ```
 
-全量 261 个定义、应用 30 个定义、完整 strict、原两项 Node 回归与构建通过。Chrome 隔离预览验证新增并选择页签、矩形与圆形命令、滑钮旋转和移动、刷新返回 No Slide。字体验收使用本地替身。
+全量 260 个定义、应用 29 个定义、完整 strict、原两项 Node 回归与构建通过。Chrome 隔离预览验证新增并选择页签、矩形与圆形命令、滑钮旋转和移动、刷新返回 No Slide。字体验收使用本地替身。
 
 yarn dev编译一次后启动Vite，实时编辑另开终端运行calcit calcit.cirru -w。仅维护calcit.cirru/deps.cirru，Snapshot通过官方CLI修改，不恢复compact.cirru/package.cirru，不提交js-out/dist。
 
