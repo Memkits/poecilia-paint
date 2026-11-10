@@ -101,7 +101,7 @@
                 logs $ :logs slide-map
                 cursor $ decode-map-as
                   .unwrap-or (get states-map :cursor) ([])
-                  List Dynamic
+                  List respo.schema/CoordKey
                 fallback-state $ {} (:pointer 0)
                   :spin-pos $ []
                     - 200 $ * 0.5 $ .-inner-width (window-host)
@@ -357,14 +357,14 @@
           :schema $ quote StructDef
         'Op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Op (:noop)
-            :states (List Dynamic) Dynamic
+            :states (List respo.schema/CoordKey) Dynamic
             :move-main-hint $ List Number
             :move-secondary-hint $ List Number
             :add-slide-after $ Option String
             :del-slide $ Option String
             :switch-slide String
             :add-shape (Option String) Shape
-            :slide-state (List Dynamic) SlideState
+            :slide-state (List respo.schema/CoordKey) SlideState
             :hydrate-storage Store
           :examples $ []
           :schema $ quote EnumDef
@@ -444,46 +444,20 @@
           :examples $ []
           :schema $ quote $ Fn app.schema/Shape
             -> $ Map Tag Dynamic
-        'normalize-op $ %{} 'CodeEntry (:doc |)
+        'normalize-op $ %{} 'CodeEntry
+          :doc "|Accept application Op values and adapt legacy widget state events."
           :code $ quote $ defn normalize-op (op)
             if
               = (enum-definition op) (Option :some Op)
-              decode-map-as op app.schema/Op
+              decode-map-as op 'app.schema/Op
               match op
                 (:states cursor data)
                   Op :states
-                    decode-map-as cursor $ List Dynamic
+                    decode-map-as cursor $ List respo.schema/CoordKey
                     , data
-                (:move-main-hint pos)
-                  Op :move-main-hint $ decode-map-as pos $ List Number
-                (:move-secondary-hint pos)
-                  Op :move-secondary-hint $ decode-map-as pos $ List Number
-                (:add-slide-after key)
-                  Op :add-slide-after $ optional-key key
-                (:del-slide key)
-                  Op :del-slide $ optional-key key
-                (:switch-slide key)
-                  Op :switch-slide $ decode-map-as key 'String
-                (:add-shape data)
-                  let
-                      payload $ decode-map-as data $ Map Tag Dynamic
-                    Op :add-shape
-                      optional-key $ .unwrap $ get payload :slide-key
-                      LegacyShape :wire $ decode-map-as
-                        .unwrap $ get payload :op
-                        Map Tag Dynamic
-                (:hydrate-storage data)
-                  Op :hydrate-storage $ decode-store data
                 _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> app.schema/Op)
-        'optional-key $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn optional-key (value)
-            if (nil? value) (Option :none)
-              Option :some $ decode-map-as value 'String
-          :examples $ []
-          :schema $ quote $ Fn Dynamic
-            -> $ Option String
+          :schema $ quote $ Fn AnyEnum (-> app.schema/Op) (:open :decode)
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
             Slide :logs $ []
