@@ -56,15 +56,15 @@
                         :style $ {} $ :font-family ui/font-code
                       fn (code)
                         match
-                          run-command
-                            parse-cirru-list $ decode-map-as code 'String
-                            :main-hint store-map
-                            :secondary-hint store-map
-                            , slide-key
-                          (:none) &unit
-                          (:some op) (d! op)
-                        ; println |Store store $ :tab store
-                        , &unit
+                          .parse-cirru-list $ decode-map-as code String
+                          (:err message)
+                            do (js/console.warn "|Invalid command syntax:" message) &unit
+                          (:ok tree)
+                            match
+                              run-command tree (:main-hint store-map) (:secondary-hint store-map) slide-key
+                              (:none) &unit
+                              (:some op) (d! op)
+                    , &unit
                 comp-button $ {} (:text |DEBUG)
                   :position $ [] 320 $ - 60
                     * 0.5 $ .-inner-height $ window-host
@@ -216,26 +216,29 @@
           :code $ quote $ defn run-command (tree c1 c2 slide-key)
             if
               = 1 $ .len tree
-              let
-                  statement $ decode-map-as
-                    .unwrap $ first tree
-                    List Dynamic
-                  command $ .unwrap-or (first statement) |
-                match command
-                  |del-slide $ Option :some $ schema/Op :del-slide slide-key
-                  |add-slide $ if (.some? slide-key)
-                    Option :some $ schema/Op :add-slide-after slide-key
-                    do (js/console.warn "|nil slide-key") (Option :none)
-                  |add-circle $ Option :some $ schema/Op :add-shape slide-key
-                    schema/CircleShape :position
-                      complex/divide-by (complex/add c1 c2) 2
-                      , :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
-                  |add-rect $ Option :some $ schema/Op :add-shape slide-key
-                    schema/RectShape :position c1 :sizes $ complex/minus c2 c1
-                  _ $ do (println "|Unknown command:" command) (Option :none)
+              match
+                .unwrap $ first tree
+                (List statement)
+                  match
+                    .unwrap-or (first statement) |
+                    (String command)
+                      match command
+                        |del-slide $ Option :some $ schema/Op :del-slide slide-key
+                        |add-slide $ if (.some? slide-key)
+                          Option :some $ schema/Op :add-slide-after slide-key
+                          do (js/console.warn "|nil slide-key") (Option :none)
+                        |add-circle $ Option :some $ schema/Op :add-shape slide-key
+                          schema/CircleShape :position
+                            complex/divide-by (complex/add c1 c2) 2
+                            , :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
+                        |add-rect $ Option :some $ schema/Op :add-shape slide-key
+                          schema/RectShape :position c1 :sizes $ complex/minus c2 c1
+                        _ $ do (println "|Unknown command:" command) (Option :none)
+                    _ $ do (js/console.warn "|Expected a command name") (Option :none)
+                _ $ do (js/console.warn "|Expected a command row") (Option :none)
               do (js/console.warn "|unknown tree:" tree) (Option :none)
           :examples $ []
-          :schema $ quote $ Fn (List Dynamic) (List Number) (List Number) (Option String)
+          :schema $ quote $ Fn (List CirruNode) (List Number) (List Number) (Option String)
             -> $ Option app.schema/Op
             :features :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
