@@ -22,7 +22,7 @@
               container ({})
                 match
                   match slide-key
-                    (:none) (Option :none)
+                    (:none) None
                     (:some id) (get slides id)
                   (:none)
                     text $ {} (:text "|No Slide")
@@ -40,7 +40,7 @@
                   :position $ [] 160 $ - 60
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
-                    hint-fn $ Fn Dynamic
+                    hint-fn $ Fn phlox.core/DomEventHost
                       Fn app.schema/Op $ -> Unit
                       -> Unit
                     d! $ schema/Op :add-slide-after slide-key
@@ -48,7 +48,7 @@
                   :position $ [] 220 $ - 60
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
-                    hint-fn $ Fn Dynamic
+                    hint-fn $ Fn phlox.core/DomEventHost
                       Fn app.schema/Op $ -> Unit
                       -> Unit
                     request-text! e
@@ -92,7 +92,7 @@
                         -> Unit
                       d! $ schema/Op :move-secondary-hint pos
           :examples $ []
-          :schema $ quote $ Fn app.schema/Store (-> phlox.schema/PhloxElement) (:features :js-ffi)
+          :schema $ quote $ Fn schema/Store (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'comp-slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide (states pointed-key slide)
             let
@@ -153,7 +153,7 @@
                       ; println "|move to:" pos
                       d! $ schema/Op :slide-state cursor $ assoc state :spin-pos pos
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) String app.schema/Slide (-> phlox.schema/PhloxElement) (:features :js-ffi)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) String schema/Slide (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'comp-slide-tabs $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide-tabs (slide-keys pointer)
             ; println |key $ -> slide-keys .to-list $ .sort
@@ -178,7 +178,7 @@
                         hslx 0 0 20
                       :align-right? false
                       :on-pointertap $ fn (e d!)
-                        hint-fn $ Fn Dynamic
+                        hint-fn $ Fn phlox.core/DomEventHost
                           Fn app.schema/Op $ -> Unit
                           -> Unit
                         ; println |key key
@@ -211,7 +211,7 @@
                     :font-family ui/font-fancy
                   :align :center
           :examples $ []
-          :schema $ quote $ Fn app.schema/Shape (-> phlox.schema/PhloxElement)
+          :schema $ quote $ Fn schema/Shape (-> phlox.schema/PhloxElement)
         'run-command $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn run-command (tree c1 c2 slide-key)
             if
@@ -223,23 +223,23 @@
                     .unwrap-or (first statement) |
                     (String command)
                       match command
-                        |del-slide $ Option :some $ schema/Op :del-slide slide-key
+                        |del-slide $ Some $ schema/Op :del-slide slide-key
                         |add-slide $ if (.some? slide-key)
-                          Option :some $ schema/Op :add-slide-after slide-key
-                          do (js/console.warn "|nil slide-key") (Option :none)
-                        |add-circle $ Option :some $ schema/Op :add-shape slide-key
+                          Some $ schema/Op :add-slide-after slide-key
+                          do (js/console.warn "|nil slide-key") None
+                        |add-circle $ Some $ schema/Op :add-shape slide-key
                           schema/CircleShape :position
                             complex/divide-by (complex/add c1 c2) 2
                             , :radius $ * 0.5 $ vec-length (complex/minus c2 c1)
-                        |add-rect $ Option :some $ schema/Op :add-shape slide-key
+                        |add-rect $ Some $ schema/Op :add-shape slide-key
                           schema/RectShape :position c1 :sizes $ complex/minus c2 c1
-                        _ $ do (println "|Unknown command:" command) (Option :none)
-                    _ $ do (js/console.warn "|Expected a command name") (Option :none)
-                _ $ do (js/console.warn "|Expected a command row") (Option :none)
-              do (js/console.warn "|unknown tree:" tree) (Option :none)
+                        _ $ do (println "|Unknown command:" command) None
+                    _ $ do (js/console.warn "|Expected a command name") None
+                _ $ do (js/console.warn "|Expected a command row") None
+              do (js/console.warn "|unknown tree:" tree) None
           :examples $ []
           :schema $ quote $ Fn (List CirruNode) (List Number) (List Number) (Option String)
-            -> $ Option app.schema/Op
+            -> $ Option schema/Op
             :features :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
@@ -273,7 +273,7 @@
         '*store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *store schema/store
           :examples $ []
-          :schema $ quote $ Ref app.schema/Store
+          :schema $ quote $ Ref schema/Store
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when
@@ -288,7 +288,7 @@
               reset! *store $ updater @*store op op-id op-time
             , &unit
           :examples $ []
-          :schema $ quote $ Fn app.schema/Op (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn schema/Op (-> Unit) (:features :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             if dev? $ load-console-formatter!
@@ -420,7 +420,7 @@
                   , Number
               _ $ LegacyShape :wire wire
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> app.schema/Shape)
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> Shape)
         'decode-store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-store (value)
             let
@@ -431,7 +431,7 @@
                     if (nil? key) (dissoc data :slide-key) data
               decode-map-as normalized Store
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> app.schema/Store)
+          :schema $ quote $ Fn Dynamic (-> Store)
         'encode-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn encode-shape (shape)
             match shape
@@ -445,13 +445,13 @@
                   :radius $ :radius circle
               (LegacyShape legacy) (:wire legacy)
           :examples $ []
-          :schema $ quote $ Fn app.schema/Shape
+          :schema $ quote $ Fn Shape
             -> $ Map Tag Dynamic
         'normalize-op $ %{} 'CodeEntry
           :doc "|Accept application Op values and adapt legacy widget state events."
           :code $ quote $ defn normalize-op (op)
             if
-              = (enum-definition op) (Option :some Op)
+              = (enum-definition op) (Some Op)
               decode-map-as op 'app.schema/Op
               match op
                 (:states cursor data)
@@ -460,19 +460,19 @@
                     , data
                 _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> app.schema/Op) (:open :decode)
+          :schema $ quote $ Fn AnyEnum (-> Op) (:open :decode)
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
             Slide :logs $ []
           :examples $ []
-          :schema $ quote app.schema/Slide
+          :schema $ quote Slide
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             Store :states
               {} $ :cursor $ []
-              , :slide-key (Option :none) :slides ({}) :main-hint ([] 10 10) :secondary-hint $ [] 40 40
+              , :slide-key None :slides ({}) :main-hint ([] 10 10) :secondary-hint $ [] 40 40
           :examples $ []
-          :schema $ quote app.schema/Store
+          :schema $ quote Store
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
@@ -489,8 +489,8 @@
                   assoc slides (key-after slides key) schema/slide
                   assoc-after slides key schema/slide
           :examples $ []
-          :schema $ quote $ Fn (Map String app.schema/Slide) (Option String)
-            -> $ Map String app.schema/Slide
+          :schema $ quote $ Fn (Map String schema/Slide) (Option String)
+            -> $ Map String schema/Slide
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -513,7 +513,7 @@
                   (:some id)
                     assoc store :slides $ dissoc (:slides store) id
               (:switch-slide key)
-                assoc store :slide-key $ Option :some key
+                assoc store :slide-key $ Some key
               (:add-shape key shape)
                 match key
                   (:none) store
@@ -532,7 +532,7 @@
                           assoc store :slides $ assoc (:slides store) id $ assoc slide :logs (conj logs entry)
               (:hydrate-storage data) data
           :examples $ []
-          :schema $ quote $ Fn app.schema/Store app.schema/Op String Number (-> app.schema/Store)
+          :schema $ quote $ Fn schema/Store schema/Op String Number (-> schema/Store)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require
