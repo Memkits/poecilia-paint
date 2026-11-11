@@ -360,7 +360,7 @@
           :schema $ quote StructDef
         'Op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Op (:noop)
-            :states (List respo.schema/CoordKey) Dynamic
+            :states (List respo.schema/CoordKey) (Map Tag WidgetField)
             :move-main-hint $ List Number
             :move-secondary-hint $ List Number
             :add-slide-after $ Option String
@@ -400,6 +400,10 @@
             :secondary-hint $ List Number
           :examples $ []
           :schema $ quote StructDef
+        'WidgetField $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion WidgetField Bool Number (List Number)
+          :examples $ []
+          :schema $ quote UnionDef
         'decode-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-shape (wire)
             match
@@ -457,7 +461,7 @@
                 (:states cursor data)
                   Op :states
                     decode-map-as cursor $ List respo.schema/CoordKey
-                    , data
+                    decode-map-as data $ Map Tag WidgetField
                 _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
           :schema $ quote $ Fn AnyEnum (-> Op) (:open :decode)
