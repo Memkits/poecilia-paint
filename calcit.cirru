@@ -41,7 +41,7 @@
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
                     hint-fn $ Fn phlox.core/DomEventHost
-                      Fn app.schema/Op $ -> Unit
+                      Fn schema/Op $ -> Unit
                       -> Unit
                     d! $ schema/Op :add-slide-after slide-key
                 comp-button $ {} (:text |Command)
@@ -49,7 +49,7 @@
                     * 0.5 $ .-inner-height $ window-host
                   :on-pointertap $ fn (e d!)
                     hint-fn $ Fn phlox.core/DomEventHost
-                      Fn app.schema/Op $ -> Unit
+                      Fn schema/Op $ -> Unit
                       -> Unit
                     request-text! e
                       {} (:placeholder |Command)
@@ -77,7 +77,7 @@
                     :hide-text? true
                     :on-change $ fn (pos d!)
                       hint-fn $ Fn (List Number)
-                        Fn app.schema/Op $ -> Unit
+                        Fn schema/Op $ -> Unit
                         -> Unit
                       d! $ schema/Op :move-main-hint pos
                 comp-drag-point (>> states :secondary-hint)
@@ -88,7 +88,7 @@
                     :hide-text? true
                     :on-change $ fn (pos d!)
                       hint-fn $ Fn (List Number)
-                        Fn app.schema/Op $ -> Unit
+                        Fn schema/Op $ -> Unit
                         -> Unit
                       d! $ schema/Op :move-secondary-hint pos
           :examples $ []
@@ -143,12 +143,12 @@
                     :fraction 2
                     :on-change $ fn (value d!)
                       hint-fn $ Fn Number
-                        Fn app.schema/Op $ -> Unit
+                        Fn schema/Op $ -> Unit
                         -> Unit
                       d! $ schema/Op :slide-state cursor $ assoc state :pointer value
                     :on-move $ fn (pos d!)
                       hint-fn $ Fn (List Number)
-                        Fn app.schema/Op $ -> Unit
+                        Fn schema/Op $ -> Unit
                         -> Unit
                       ; println "|move to:" pos
                       d! $ schema/Op :slide-state cursor $ assoc state :spin-pos pos
@@ -179,7 +179,7 @@
                       :align-right? false
                       :on-pointertap $ fn (e d!)
                         hint-fn $ Fn phlox.core/DomEventHost
-                          Fn app.schema/Op $ -> Unit
+                          Fn schema/Op $ -> Unit
                           -> Unit
                         ; println |key key
                         d! $ schema/Op :switch-slide key
