@@ -92,7 +92,7 @@
                         -> Unit
                       d! $ schema/Op :move-secondary-hint pos
           :examples $ []
-          :schema $ quote $ Fn schema/Store (-> phlox.schema/PhloxElement) (:features :js-ffi)
+          :schema $ quote $ Fn schema/Store (-> phlox.schema/PhloxElement) (:features :io :js-ffi)
         'comp-slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide (states pointed-key slide)
             let
@@ -153,7 +153,7 @@
                       ; println "|move to:" pos
                       d! $ schema/Op :slide-state cursor $ assoc state :spin-pos pos
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) String schema/Slide (-> phlox.schema/PhloxElement) (:features :js-ffi)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) String schema/Slide (-> phlox.schema/PhloxElement) (:features :io :js-ffi)
         'comp-slide-tabs $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn comp-slide-tabs (slide-keys pointer)
             ; println |key $ -> slide-keys .to-list $ .sort
@@ -240,7 +240,7 @@
           :examples $ []
           :schema $ quote $ Fn (List CirruNode) (List Number) (List Number) (Option String)
             -> $ Option schema/Op
-            :features :js-ffi
+            :features :io :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
@@ -288,45 +288,42 @@
               reset! *store $ updater @*store op op-id op-time
             , &unit
           :examples $ []
-          :schema $ quote $ Fn schema/Op (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn schema/Op (-> Unit) (:features :io :js-ffi :state)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             if dev? $ load-console-formatter!
             ffi-then
               ffi-load-font $ new FontFaceObserver "|Josefin Sans"
-              fn (_event)
-                render-app! $ {}
-            add-watch! *store :change $ fn (store prev)
-              render-app! $ {}
+              fn (_event) (render-app!)
+            add-watch! *store :change $ fn (store prev) (render-app!)
             render-control!
             start-control-loop! 8 on-control-event
             println "|App Started"
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
               do (println "|Code updated.") (clear-phlox-caches!) (remove-watch! *store :change)
-                add-watch! *store :change $ fn (store prev)
-                  render-app! $ {}
-                render-app! $ {}
+                add-watch! *store :change $ fn (store prev) (render-app!)
+                render-app!
                 replace-control-loop! 8 on-control-event
                 hud! |ok~ |Ok
               hud! |error build-errors
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'render-app! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn render-app! (arg)
+          :code $ quote $ defn render-app! ()
             render! (comp-container @*store)
               fn (op)
                 if (enum? op)
                   dispatch! $ schema/normalize-op op
                   raise |expected-poecilia-event
-              , arg
+              {}
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require (|pixi.js :as PIXI)
@@ -464,7 +461,7 @@
                     decode-map-as data $ Map Tag WidgetField
                 _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> Op) (:open :decode)
+          :schema $ quote $ Fn AnyEnum (-> Op) (:features :io) (:open :decode)
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
             Slide :logs $ []
