@@ -404,24 +404,34 @@
         'decode-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-shape (wire)
             match
-              .unwrap-or (get wire :type) :unknown
+              match (get wire :type)
+                (:some kind)
+                  if (tag? kind) kind :unknown
+                (:none) :unknown
               :rect $ RectShape :position
-                decode-map-as
-                  .unwrap-or (get wire :position) ([] 0 0)
-                  List Number
-                , :sizes $ decode-map-as
-                  .unwrap-or (get wire :sizes) ([] 0 0)
-                  List Number
+                .unwrap-or
+                  .map (get wire :position)
+                    fn (x)
+                      decode-map-as x $ List Number
+                  [] 0 0
+                , :sizes $ .unwrap-or
+                  .map (get wire :sizes)
+                    fn (x)
+                      decode-map-as x $ List Number
+                  [] 0 0
               :circle $ CircleShape :position
-                decode-map-as
-                  .unwrap-or (get wire :position) ([] 0 0)
-                  List Number
-                , :radius $ decode-map-as
-                  .unwrap-or (get wire :radius) 0
-                  , Number
+                .unwrap-or
+                  .map (get wire :position)
+                    fn (x)
+                      decode-map-as x $ List Number
+                  [] 0 0
+                , :radius $ .unwrap-or
+                  .map (get wire :radius)
+                    fn (x) (decode-map-as x Number)
+                  , 0
               _ $ LegacyShape :wire wire
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> Shape)
+          :schema $ quote $ Fn (Map Tag V) (-> Shape) (:generics V)
         'decode-store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-store (value)
             let
@@ -432,7 +442,7 @@
                     if (nil? key) (dissoc data :slide-key) data
               decode-map-as normalized Store
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Store)
+          :schema $ quote $ Fn Input (-> Store) (:generics Input)
         'encode-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn encode-shape (shape)
             match shape
