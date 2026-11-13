@@ -462,7 +462,8 @@
           :doc "|Accept application Op values and adapt legacy widget state events."
           :code $ quote $ defn normalize-op (op)
             if
-              = (enum-definition op) (Some Op)
+              and (enum? op)
+                = (enum-definition op) (Some Op)
               decode-map-as op 'app.schema/Op
               match op
                 (:states cursor data)
@@ -471,7 +472,7 @@
                     decode-map-as data $ Map Tag WidgetField
                 _ $ do (println |unknown-op op) (Op :noop)
           :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> Op) (:features :io) (:open :decode)
+          :schema $ quote $ Fn Input (-> Op) (:generics Input) (:features :io)
         'slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def slide
             Slide :logs $ []
