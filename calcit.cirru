@@ -378,6 +378,10 @@
           :code $ quote $ defunion Shape RectShape CircleShape LegacyShape
           :examples $ []
           :schema $ quote UnionDef
+        'ShapeWireField $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion ShapeWireField Tag Number (List Number)
+          :examples $ []
+          :schema $ quote UnionDef
         'Slide $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Slide
             :logs $ List ActionLog
@@ -443,17 +447,27 @@
               decode-map-as normalized Store
           :examples $ []
           :schema $ quote $ Fn Input (-> Store) (:generics Input)
+        'encode-circle $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn encode-circle (circle)
+            {} (:type :circle)
+              :position $ :position circle
+              :radius $ :radius circle
+          :examples $ []
+          :schema $ quote $ Fn CircleShape
+            -> $ Map Tag ShapeWireField
+        'encode-rect $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn encode-rect (rect)
+            {} (:type :rect)
+              :position $ :position rect
+              :sizes $ :sizes rect
+          :examples $ []
+          :schema $ quote $ Fn RectShape
+            -> $ Map Tag ShapeWireField
         'encode-shape $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn encode-shape (shape)
             match shape
-              (RectShape rect)
-                {} (:type :rect)
-                  :position $ :position rect
-                  :sizes $ :sizes rect
-              (CircleShape circle)
-                {} (:type :circle)
-                  :position $ :position circle
-                  :radius $ :radius circle
+              (RectShape rect) (encode-rect rect)
+              (CircleShape circle) (encode-circle circle)
               (LegacyShape legacy) (:wire legacy)
           :examples $ []
           :schema $ quote $ Fn Shape
