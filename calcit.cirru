@@ -392,9 +392,13 @@
             :spin-pos $ List Number
           :examples $ []
           :schema $ quote StructDef
+        'StateValue $ %{} 'CodeEntry
+          :doc "|One component state value: the root cursor list or a map of widget fields, which also covers persisted SlideState maps."
+          :code $ quote $ defunion StateValue (List respo.schema/CoordKey) (Map Tag WidgetField)
+          :examples $ []
         'Store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Store
-            :states $ Map Dynamic Dynamic
+            :states $ Map respo.schema/CoordKey app.schema/StateValue
             :slide-key $ Option String
             :slides $ Map String Slide
             :main-hint $ List Number
@@ -524,11 +528,12 @@
               (:states cursor data)
                 assoc store :states $ decode-map-as
                   assoc-in (:states store) (conj cursor :data) data
-                  Map Dynamic Dynamic
+                  Map respo.schema/CoordKey app.schema/StateValue
               (:slide-state cursor state)
                 assoc store :states $ decode-map-as
-                  assoc-in (:states store) (conj cursor :data) (&struct:to-map state)
-                  Map Dynamic Dynamic
+                  assoc-in (:states store) (conj cursor :data)
+                    decode-map-as (&struct:to-map state) (Map Tag app.schema/WidgetField)
+                  Map respo.schema/CoordKey app.schema/StateValue
               (:move-main-hint pos) (assoc store :main-hint pos)
               (:move-secondary-hint pos) (assoc store :secondary-hint pos)
               (:add-slide-after key)
